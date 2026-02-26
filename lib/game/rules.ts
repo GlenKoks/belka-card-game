@@ -1,11 +1,40 @@
-import { Card, PlayerId, Suit, Team, Trick, TrickCard, RoundResult } from './types';
+import { Card, PlayerId, Suit, Team, Trick, TrickCard, RoundResult, Rank } from './types';
 import { RANK_ORDER } from './deck';
+
+/**
+ * Card point values for scoring
+ */
+const CARD_POINTS: Record<Rank, number> = {
+  '6': 0,
+  '7': 0,
+  '8': 0,
+  '9': 0,
+  '10': 10,
+  'J': 2,
+  'Q': 3,
+  'K': 4,
+  'A': 11,
+};
+
+/**
+ * Jack hierarchy (all jacks are trump)
+ * Валет Крести (clubs) = 1st (highest)
+ * Валет Пики (spades) = 2nd
+ * Валет Черви (hearts) = 3rd
+ * Валет Буби (diamonds) = 4th (lowest)
+ */
+const JACK_ORDER: Record<Suit, number> = {
+  clubs: 3,    // 1st jack (highest)
+  spades: 2,   // 2nd jack
+  hearts: 1,   // 3rd jack
+  diamonds: 0, // 4th jack (lowest)
+};
 
 /**
  * Determine which cards in hand are valid to play given the current trick state.
  * Rules:
- * 1. Must follow lead suit if possible
- * 2. If no lead suit, must play trump if possible
+ * 1. Must follow lead suit if possible (but jacks are always trump, not their suit)
+ * 2. If no lead suit, must play trump/jack if possible
  * 3. If neither, can play any card
  */
 export function getValidCards(
@@ -20,15 +49,13 @@ export function getValidCards(
     return hand;
   }
 
-  // Try to follow suit
-  const suitCards = hand.filter(c => c.suit === leadSuit);
+  // Try to follow lead suit (but jacks are trump, not their suit)
+  const suitCards = hand.filter(c => c.suit === leadSuit && c.rank !== 'J');
   if (suitCards.length > 0) return suitCards;
 
-  // No lead suit — must play trump if available
-  if (trumpSuit) {
-    const trumpCards = hand.filter(c => c.suit === trumpSuit);
-    if (trumpCards.length > 0) return trumpCards;
-  }
+  // No lead suit cards — must play trump/jack if available
+  const trumpCards = hand.filter(c => c.suit === trumpSuit || c.rank === 'J');
+  if (trumpCards.length > 0) return trumpCards;
 
   // No suit, no trump — play anything
   return hand;
@@ -36,6 +63,8 @@ export function getValidCards(
 
 /**
  * Determine the winner of a completed trick (4 cards played).
+ * Jacks are always trump and beat all other cards.
+ * Jack hierarchy: clubs > spades > hearts > diamonds
  */
 export function determineTrickWinner(trick: Trick, trumpSuit: Suit | null): PlayerId {
   const { cards, leadSuit } = trick;
@@ -55,6 +84,7 @@ export function determineTrickWinner(trick: Trick, trumpSuit: Suit | null): Play
 
 /**
  * Returns true if challenger beats current best card.
+ * Jack hierarchy: clubs (1st) > spades (2nd) > hearts (3rd) > diamonds (4th)
  */
 function beats(
   challenger: Card,
@@ -62,6 +92,21 @@ function beats(
   leadSuit: Suit,
   trumpSuit: Suit | null
 ): boolean {
+  const challengerIsJack = challenger.rank === 'J';
+  const currentIsJack = current.rank === 'J';
+
+  // Both jacks — higher jack wins
+  if (challengerIsJack && currentIsJack) {
+    return JACK_ORDER[challenger.suit] > JACK_ORDER[current.suit];
+  }
+
+  // Challenger is jack, current is not — jack wins
+  if (challengerIsJack && !currentIsJack) return true;
+
+  // Current is jack, challenger is not — jack wins
+  if (!challengerIsJack && currentIsJack) return false;
+
+  // Neither is jack — use normal trump/lead suit logic
   const challengerIsTrump = trumpSuit !== null && challenger.suit === trumpSuit;
   const currentIsTrump = trumpSuit !== null && current.suit === trumpSuit;
   const challengerIsLead = challenger.suit === leadSuit;
@@ -100,13 +145,21 @@ export function getTeam(playerId: PlayerId): Team {
 
 /**
  * Calculate round result from completed tricks.
+ * Scoring: team with higher card points wins 2 points
+ * Card points: K=4, Q=3, J=2, 10=10, A=11
  */
 export function calculateRoundResult(completedTricks: Trick[]): RoundResult {
   const trickCounts: Record<PlayerId, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
+  const cardPoints: Record<PlayerId, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
 
   for (const trick of completedTricks) {
     if (trick.winnerId !== null) {
       trickCounts[trick.winnerId]++;
+
+      // Add card points for all cards in this trick to the winner
+      for (const { card } of trick.cards) {
+        cardPoints[trick.winnerId] += CARD_POINTS[card.rank];
+      }
     }
   }
 
@@ -115,20 +168,22 @@ export function calculateRoundResult(completedTricks: Trick[]): RoundResult {
     them: trickCounts[1] + trickCounts[3],
   };
 
+  const teamCardPoints = {
+    us: cardPoints[0] + cardPoints[2],
+    them: cardPoints[1] + cardPoints[3],
+  };
+
   const pointsEarned = { us: 0, them: 0 };
 
-  // All 9 tricks = 2 points
-  if (teamTricks.us === 9) {
+  // Team with higher card points wins 2 points
+  if (teamCardPoints.us > teamCardPoints.them) {
     pointsEarned.us = 2;
-  } else if (teamTricks.them === 9) {
+  } else if (teamCardPoints.them > teamCardPoints.us) {
     pointsEarned.them = 2;
-  } else if (teamTricks.us >= 5) {
-    pointsEarned.us = 1;
-  } else if (teamTricks.them >= 5) {
-    pointsEarned.them = 1;
   }
+  // If equal, no points awarded
 
-  return { trickCounts, teamTricks, pointsEarned };
+  return { trickCounts, teamTricks, cardPoints: teamCardPoints, pointsEarned };
 }
 
 /**
@@ -143,4 +198,46 @@ export function nextPlayer(playerId: PlayerId): PlayerId {
  */
 export function firstPlayer(dealerId: PlayerId): PlayerId {
   return nextPlayer(dealerId);
+}
+
+/**
+ * Determine suit assignment for a player based on their jack in round 1.
+ * Jack of Clubs → Clubs
+ * Jack of Spades → Spades
+ * Jack of Hearts → Hearts
+ * Jack of Diamonds → Diamonds
+ */
+export function getSuitForJack(jackSuit: Suit): Suit {
+  return jackSuit;
+}
+
+/**
+ * Determine trump suit for a round based on suit assignments and which player has the jack.
+ * In round 1, trump is always Clubs.
+ * In round 2+, trump is determined by which player has the jack for their assigned suit.
+ */
+export function determineTrumpSuit(
+  round: number,
+  suitAssignment: Record<PlayerId, Suit | null>,
+  hands: Record<PlayerId, Card[]>
+): Suit | null {
+  if (round === 1) {
+    return 'clubs'; // Round 1 trump is always Clubs
+  }
+
+  // Round 2+: find which player has the jack for their assigned suit
+  for (const playerId of [0, 1, 2, 3] as PlayerId[]) {
+    const assignedSuit = suitAssignment[playerId];
+    if (assignedSuit === null) continue;
+
+    const hand = hands[playerId];
+    const hasJack = hand.some(c => c.rank === 'J' && c.suit === assignedSuit);
+
+    if (hasJack) {
+      return assignedSuit;
+    }
+  }
+
+  // Fallback (shouldn't happen if game state is correct)
+  return 'clubs';
 }

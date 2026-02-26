@@ -42,6 +42,7 @@ export type GamePhase =
 export interface RoundResult {
   trickCounts: Record<PlayerId, number>;
   teamTricks: { us: number; them: number };
+  cardPoints: { us: number; them: number };
   pointsEarned: { us: number; them: number };
 }
 
@@ -54,6 +55,8 @@ export interface GameState {
   round: number;
   dealerId: PlayerId;
   currentPlayerId: PlayerId;
+  // Suit assignment (determined in round 1, fixed for entire match)
+  suitAssignment: Record<PlayerId, Suit | null>;
   // Cards
   hands: Record<PlayerId, Card[]>;
   trumpSuit: Suit | null;

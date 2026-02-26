@@ -21,21 +21,19 @@ export function RoundResultModal({
 
   const usWon = result.pointsEarned.us > 0;
   const themWon = result.pointsEarned.them > 0;
-  const usAllTricks = result.teamTricks.us === 9;
-  const themAllTricks = result.teamTricks.them === 9;
 
   let resultTitle = 'Ничья';
   let resultColor = '#A8C5A0';
   let pointsText = '';
 
   if (usWon) {
-    resultTitle = usAllTricks ? '🏆 Все взятки!' : '✅ Победа в раунде!';
+    resultTitle = '✅ Победа в раунде!';
     resultColor = '#4CAF50';
-    pointsText = `+${result.pointsEarned.us} очко${result.pointsEarned.us === 2 ? '!' : ''}`;
+    pointsText = `+${result.pointsEarned.us} очко в матче`;
   } else if (themWon) {
-    resultTitle = themAllTricks ? '😔 Противник взял всё' : '❌ Раунд проигран';
+    resultTitle = '❌ Раунд проигран';
     resultColor = '#E53935';
-    pointsText = `Они получают +${result.pointsEarned.them}`;
+    pointsText = `Противники получают +${result.pointsEarned.them}`;
   }
 
   return (
@@ -48,18 +46,31 @@ export function RoundResultModal({
             {resultTitle}
           </Text>
 
+          {/* Card Points */}
+          <View style={styles.pointsRow}>
+            <View style={styles.pointBlock}>
+              <Text style={styles.pointLabel}>Баллы</Text>
+              <Text style={styles.pointValue}>{result.cardPoints.us}</Text>
+              <Text style={styles.pointSub}>ваша команда</Text>
+            </View>
+            <Text style={styles.pointSep}>vs</Text>
+            <View style={styles.pointBlock}>
+              <Text style={styles.pointLabel}>Баллы</Text>
+              <Text style={styles.pointValue}>{result.cardPoints.them}</Text>
+              <Text style={styles.pointSub}>противники</Text>
+            </View>
+          </View>
+
           {/* Trick counts */}
           <View style={styles.tricksRow}>
             <View style={styles.trickBlock}>
-              <Text style={styles.trickLabel}>МЫ</Text>
+              <Text style={styles.trickLabel}>Взятки</Text>
               <Text style={styles.trickCount}>{result.teamTricks.us}</Text>
-              <Text style={styles.trickSub}>взяток</Text>
             </View>
             <Text style={styles.trickSep}>vs</Text>
             <View style={styles.trickBlock}>
-              <Text style={styles.trickLabel}>ОНИ</Text>
+              <Text style={styles.trickLabel}>Взятки</Text>
               <Text style={styles.trickCount}>{result.teamTricks.them}</Text>
-              <Text style={styles.trickSub}>взяток</Text>
             </View>
           </View>
 
@@ -147,6 +158,35 @@ const styles = StyleSheet.create({
   trickSep: {
     color: '#A8C5A0',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  pointsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  pointBlock: {
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  pointLabel: {
+    color: '#A8C5A0',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  pointValue: {
+    color: '#F5C842',
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  pointSub: {
+    color: '#A8C5A0',
+    fontSize: 9,
+  },
+  pointSep: {
+    color: '#A8C5A0',
+    fontSize: 14,
     fontWeight: '600',
   },
   pointsText: {

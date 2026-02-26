@@ -1,4 +1,4 @@
-import { GameState, GamePhase, PlayerId, Card, Trick } from './types';
+import { GameState, GamePhase, PlayerId, Card, Trick, Suit } from './types';
 import { dealCards, sortHand } from './deck';
 import {
   getValidCards,
@@ -7,6 +7,8 @@ import {
   firstPlayer,
   nextPlayer,
   getTeam,
+  determineTrumpSuit,
+  getSuitForJack,
 } from './rules';
 
 export type GameAction =
@@ -20,7 +22,7 @@ export type GameAction =
   | { type: 'UPDATE_SETTINGS'; winThreshold: number; playerNames: Record<PlayerId, string> };
 
 export function createInitialState(
-  winThreshold = 10,
+  winThreshold = 12,
   playerNames?: Record<PlayerId, string>
 ): GameState {
   return {
@@ -30,6 +32,7 @@ export function createInitialState(
     round: 0,
     dealerId: Math.floor(Math.random() * 4) as PlayerId,
     currentPlayerId: 0,
+    suitAssignment: { 0: null, 1: null, 2: null, 3: null },
     hands: { 0: [], 1: [], 2: [], 3: [] },
     trumpSuit: null,
     voltCard: null,
@@ -197,7 +200,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
 function dealRound(state: GameState): GameState {
   const { hands, voltCard } = dealCards(state.dealerId);
-  const trumpSuit = voltCard.suit;
+
+  // Determine trump suit and update suit assignment if needed
+  let trumpSuit: Suit | null = null;
+  let newSuitAssignment = { ...state.suitAssignment };
+
+  if (state.round === 1) {
+    // Round 1: trump is always Clubs, determine suit assignment from jacks
+    trumpSuit = 'clubs';
+
+    // Find which player has which jack and assign suits
+    for (const playerId of [0, 1, 2, 3] as PlayerId[]) {
+      const hand = hands[playerId];
+      const jack = hand.find(c => c.rank === 'J');
+      if (jack) {
+        newSuitAssignment[playerId] = jack.suit;
+      }
+    }
+  } else {
+    // Round 2+: determine trump from suit assignment and current jacks
+    trumpSuit = determineTrumpSuit(state.round, newSuitAssignment, hands);
+  }
 
   // Sort all hands
   const sortedHands = {
@@ -211,6 +234,7 @@ function dealRound(state: GameState): GameState {
 
   return {
     ...state,
+    suitAssignment: newSuitAssignment,
     hands: sortedHands,
     trumpSuit,
     voltCard,
