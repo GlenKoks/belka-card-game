@@ -38,6 +38,14 @@
 - [x] Unit tests for jack hierarchy
 - [x] Unit tests for suit assignment
 - [x] Unit tests for jack-based trump determination
+- [x] Unit tests for jack-led trick rules
+- [x] Unit tests for jack-following rules (cannot play jack when following suit)
+
+## Card Play Rules (Fixed)
+- [x] Jack-led trick: must play trump/jack only
+- [x] Regular card led: follow suit (jacks excluded), then trump/jack, then any
+- [x] Jacks have no suit - they are always trump
+- [x] Cannot play jack when following suit (jack is not a suit card)
 
 ## Completed (Previous)
 - [x] App logo generated

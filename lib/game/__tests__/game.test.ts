@@ -149,6 +149,37 @@ describe('getValidCards', () => {
     const valid = getValidCards(handNoSuitNoTrump, trick, 'hearts');
     expect(valid).toHaveLength(2);
   });
+
+  it('must play trump/jack if jack was led', () => {
+    const hand: Card[] = [
+      { id: 'A_spades', suit: 'spades', rank: 'A' },
+      { id: 'K_hearts', suit: 'hearts', rank: 'K' },
+      { id: 'J_diamonds', suit: 'diamonds', rank: 'J' },
+    ];
+    const trick: Trick = {
+      cards: [{ card: { id: 'J_clubs', suit: 'clubs', rank: 'J' }, playerId: 1 }],
+      leadSuit: 'clubs',
+      winnerId: null,
+    };
+    const valid = getValidCards(hand, trick, 'hearts');
+    expect(valid.length).toBeGreaterThan(0);
+    expect(valid.some(c => c.suit === 'hearts' || c.rank === 'J')).toBe(true);
+  });
+
+  it('cannot play jack when following suit', () => {
+    const hand: Card[] = [
+      { id: '8_spades', suit: 'spades', rank: '8' },
+      { id: 'J_spades', suit: 'spades', rank: 'J' },
+    ];
+    const trick: Trick = {
+      cards: [{ card: { id: '6_spades', suit: 'spades', rank: '6' }, playerId: 1 }],
+      leadSuit: 'spades',
+      winnerId: null,
+    };
+    const valid = getValidCards(hand, trick, 'hearts');
+    expect(valid).toHaveLength(1);
+    expect(valid[0].id).toBe('8_spades');
+  });
 });
 
 describe('determineTrickWinner', () => {

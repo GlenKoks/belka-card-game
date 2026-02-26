@@ -33,9 +33,10 @@ const JACK_ORDER: Record<Suit, number> = {
 /**
  * Determine which cards in hand are valid to play given the current trick state.
  * Rules:
- * 1. Must follow lead suit if possible (but jacks are always trump, not their suit)
- * 2. If no lead suit, must play trump/jack if possible
- * 3. If neither, can play any card
+ * 1. If lead card is a Jack → must play trump/jack only (jacks have no suit)
+ * 2. If lead card is regular card → must follow lead suit (excluding jacks, which are trump)
+ *    - If no suit cards → must play trump/jack
+ * 3. If no valid cards from above → play any card
  */
 export function getValidCards(
   hand: Card[],
@@ -49,7 +50,19 @@ export function getValidCards(
     return hand;
   }
 
-  // Try to follow lead suit (but jacks are trump, not their suit)
+  // Check if lead card is a jack (jacks have no suit, they are trump)
+  const leadCard = cards[0]?.card;
+  const leadIsJack = leadCard?.rank === 'J';
+
+  if (leadIsJack) {
+    // Jack was led → must play trump/jack only
+    const trumpCards = hand.filter(c => c.suit === trumpSuit || c.rank === 'J');
+    if (trumpCards.length > 0) return trumpCards;
+    // No trump/jack → play any card
+    return hand;
+  }
+
+  // Regular card was led → follow lead suit (but jacks are trump, not their suit)
   const suitCards = hand.filter(c => c.suit === leadSuit && c.rank !== 'J');
   if (suitCards.length > 0) return suitCards;
 
