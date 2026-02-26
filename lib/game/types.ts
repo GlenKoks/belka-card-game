@@ -13,11 +13,11 @@ export interface Card {
 
 export type PlayerId = 0 | 1 | 2 | 3;
 // Seating: 0=Bottom (human), 1=Left, 2=Top, 3=Right
-// Teams: [0,2] vs [1,3]
 
-export type Team = 'us' | 'them';
-// Team "us" = players 0 and 2
-// Team "them" = players 1 and 3
+export type Team = 'black' | 'red';
+// Team assignment determined in round 1 by Валет Крести holder
+// Black team: Валет Крести holder + opposite player
+// Red team: remaining two players
 
 export interface TrickCard {
   card: Card;
@@ -41,16 +41,19 @@ export type GamePhase =
 
 export interface RoundResult {
   trickCounts: Record<PlayerId, number>;
-  teamTricks: { us: number; them: number };
-  cardPoints: { us: number; them: number };
-  pointsEarned: { us: number; them: number };
+  teamTricks: { black: number; red: number };
+  cardPoints: { black: number; red: number };
+  eyesEarned: { black: number; red: number };
+  wasEggs: boolean; // true if both teams had equal points
 }
 
 export interface GameState {
   phase: GamePhase;
   // Match state
-  matchScore: { us: number; them: number };
+  matchScore: { black: number; red: number };
   winThreshold: number;
+  // Team assignment (determined in round 1, fixed for entire match)
+  teamAssignment: Record<PlayerId, Team>; // which team each player belongs to
   // Round state
   round: number;
   dealerId: PlayerId;
@@ -61,11 +64,13 @@ export interface GameState {
   hands: Record<PlayerId, Card[]>;
   trumpSuit: Suit | null;
   voltCard: Card | null; // the card that revealed trump
+  trumpHolderId: PlayerId | null; // player who has the trump-determining jack
   // Trick state
   currentTrick: Trick;
   completedTricks: Trick[];
   // Results
   lastRoundResult: RoundResult | null;
+  previousRoundWasEggs: boolean; // true if previous round had equal points
   // Player names
   playerNames: Record<PlayerId, string>;
 }

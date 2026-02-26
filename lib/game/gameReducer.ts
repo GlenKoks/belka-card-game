@@ -1,14 +1,10 @@
-import { GameState, GamePhase, PlayerId, Card, Trick, Suit } from './types';
+import { Card, GameState, PlayerId, Team } from './types';
 import { dealCards, sortHand } from './deck';
 import {
   getValidCards,
   determineTrickWinner,
-  calculateRoundResult,
-  firstPlayer,
-  nextPlayer,
-  getTeam,
-  determineTrumpSuit,
-  getSuitForJack,
+  calculateCardPoints,
+  calculateEyes,
 } from './rules';
 
 export type GameAction =
@@ -27,8 +23,9 @@ export function createInitialState(
 ): GameState {
   return {
     phase: 'WAITING',
-    matchScore: { us: 0, them: 0 },
+    matchScore: { black: 0, red: 0 },
     winThreshold,
+    teamAssignment: { 0: 'red', 1: 'red', 2: 'red', 3: 'red' }, // will be set in round 1
     round: 0,
     dealerId: Math.floor(Math.random() * 4) as PlayerId,
     currentPlayerId: 0,
@@ -36,9 +33,11 @@ export function createInitialState(
     hands: { 0: [], 1: [], 2: [], 3: [] },
     trumpSuit: null,
     voltCard: null,
+    trumpHolderId: null,
     currentTrick: { cards: [], leadSuit: null, winnerId: null },
     completedTricks: [],
     lastRoundResult: null,
+    previousRoundWasEggs: false,
     playerNames: playerNames ?? {
       0: 'Вы',
       1: 'Игрок 2',
@@ -55,7 +54,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         action.winThreshold ?? state.winThreshold,
         action.playerNames ?? state.playerNames
       );
-      // Deal immediately
       return dealRound({ ...base, phase: 'DEALING', round: 1 });
     }
 
@@ -68,116 +66,132 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== 'PLAYING_TRICK') return state;
       if (state.currentPlayerId !== playerId) return state;
 
-      // Validate card is in hand
       const hand = state.hands[playerId];
       if (!hand.find(c => c.id === card.id)) return state;
 
-      // Validate card is a valid play
       const valid = getValidCards(hand, state.currentTrick, state.trumpSuit);
       if (!valid.find(c => c.id === card.id)) return state;
 
-      // Remove card from hand
       const newHand = hand.filter(c => c.id !== card.id);
-
-      // Determine lead suit
-      const leadSuit = state.currentTrick.cards.length === 0
-        ? card.suit
-        : state.currentTrick.leadSuit;
-
-      // Add card to trick
-      const newTrickCards = [
-        ...state.currentTrick.cards,
-        { card, playerId },
-      ];
-
-      const newTrick: Trick = {
+      const newTrick = {
         ...state.currentTrick,
-        cards: newTrickCards,
-        leadSuit,
+        cards: [...state.currentTrick.cards, { card, playerId }],
+        leadSuit: state.currentTrick.leadSuit || card.suit,
       };
 
-      const newHands = { ...state.hands, [playerId]: newHand };
+      const nextPlayerId = (playerId + 1) % 4 as PlayerId;
+      const phase = newTrick.cards.length === 4 ? 'TRICK_RESOLVED' : 'PLAYING_TRICK';
 
-      // If trick is complete (4 cards), resolve it
-      if (newTrickCards.length === 4) {
-        const winnerId = determineTrickWinner(
-          { ...newTrick, winnerId: null },
-          state.trumpSuit
-        );
-        const resolvedTrick: Trick = { ...newTrick, winnerId };
-        const completedTricks = [...state.completedTricks, resolvedTrick];
-
-        // Check if round is over (9 tricks)
-        if (completedTricks.length === 9) {
-          const result = calculateRoundResult(completedTricks);
-          const newMatchScore = {
-            us: state.matchScore.us + result.pointsEarned.us,
-            them: state.matchScore.them + result.pointsEarned.them,
-          };
-
-          const isMatchOver =
-            newMatchScore.us >= state.winThreshold ||
-            newMatchScore.them >= state.winThreshold;
-
-          return {
-            ...state,
-            hands: newHands,
-            currentTrick: resolvedTrick,
-            completedTricks,
-            currentPlayerId: winnerId,
-            matchScore: newMatchScore,
-            lastRoundResult: result,
-            phase: isMatchOver ? 'MATCH_FINISHED' : 'ROUND_FINISHED',
-          };
-        }
-
-        // Trick resolved, winner leads next
-        return {
-          ...state,
-          hands: newHands,
-          currentTrick: resolvedTrick,
-          completedTricks,
-          currentPlayerId: winnerId,
-          phase: 'TRICK_RESOLVED',
-        };
-      }
-
-      // Trick in progress — next player's turn
       return {
         ...state,
-        hands: newHands,
+        hands: { ...state.hands, [playerId]: newHand },
         currentTrick: newTrick,
-        currentPlayerId: nextPlayer(playerId),
-        phase: 'PLAYING_TRICK',
+        currentPlayerId: nextPlayerId,
+        phase,
       };
     }
 
     case 'RESOLVE_TRICK': {
-      // Start next trick — winner already set as currentPlayerId
       if (state.phase !== 'TRICK_RESOLVED') return state;
+
+      const winnerId = determineTrickWinner(state.currentTrick, state.trumpSuit);
+      const completedTrick = { ...state.currentTrick, winnerId };
+      const completedTricks = [...state.completedTricks, completedTrick];
+
+      const phase = completedTricks.length === 9 ? 'ROUND_FINISHED' : 'PLAYING_TRICK';
+      const currentPlayerId = winnerId ?? 0;
+
       return {
         ...state,
+        completedTricks,
         currentTrick: { cards: [], leadSuit: null, winnerId: null },
-        phase: 'PLAYING_TRICK',
+        currentPlayerId,
+        phase,
       };
     }
 
     case 'NEXT_ROUND': {
       if (state.phase !== 'ROUND_FINISHED') return state;
-      const newDealerId = nextPlayer(state.dealerId);
-      return dealRound({
-        ...state,
-        round: state.round + 1,
-        dealerId: newDealerId,
-        phase: 'DEALING',
-        completedTricks: [],
-        currentTrick: { cards: [], leadSuit: null, winnerId: null },
-        lastRoundResult: null,
-      });
-    }
 
-    case 'RESET_MATCH': {
-      return createInitialState(state.winThreshold, state.playerNames);
+      // Calculate round result
+      const blackPlayers: PlayerId[] = [0, 1, 2, 3].filter(
+        p => state.teamAssignment[p as PlayerId] === 'black'
+      ) as PlayerId[];
+      const redPlayers: PlayerId[] = [0, 1, 2, 3].filter(
+        p => state.teamAssignment[p as PlayerId] === 'red'
+      ) as PlayerId[];
+
+      const blackPoints = calculateCardPoints(state.completedTricks, blackPlayers);
+      const redPoints = calculateCardPoints(state.completedTricks, redPlayers);
+      const blackTricks = state.completedTricks.filter(
+        t => t.winnerId !== null && blackPlayers.includes(t.winnerId)
+      ).length;
+      const redTricks = state.completedTricks.filter(
+        t => t.winnerId !== null && redPlayers.includes(t.winnerId)
+      ).length;
+
+      const { black: eyesBlack, red: eyesRed, wasEggs } = calculateEyes(
+        blackPoints,
+        redPoints,
+        blackTricks,
+        redTricks,
+        state.trumpHolderId,
+        state.teamAssignment,
+        state.previousRoundWasEggs
+      );
+
+      const newMatchScore = {
+        black: state.matchScore.black + eyesBlack,
+        red: state.matchScore.red + eyesRed,
+      };
+
+      const roundResult = {
+        trickCounts: {
+          0: state.completedTricks.filter(t => t.winnerId === 0).length,
+          1: state.completedTricks.filter(t => t.winnerId === 1).length,
+          2: state.completedTricks.filter(t => t.winnerId === 2).length,
+          3: state.completedTricks.filter(t => t.winnerId === 3).length,
+        },
+        teamTricks: { black: blackTricks, red: redTricks },
+        cardPoints: { black: blackPoints, red: redPoints },
+        eyesEarned: { black: eyesBlack, red: eyesRed },
+        wasEggs,
+      };
+
+      // Check if match is finished
+      if (
+        newMatchScore.black >= state.winThreshold ||
+        newMatchScore.red >= state.winThreshold
+      ) {
+        return {
+          ...state,
+          phase: 'MATCH_FINISHED',
+          matchScore: newMatchScore,
+          lastRoundResult: roundResult,
+        };
+      }
+
+      // Continue to next round
+      const nextRound = state.round + 1;
+      const nextDealerId = (state.dealerId + 1) % 4 as PlayerId;
+      const newState: GameState = {
+        ...state,
+        round: nextRound,
+        dealerId: nextDealerId,
+        currentPlayerId: nextDealerId,
+        hands: { 0: [], 1: [], 2: [], 3: [] },
+        trumpSuit: null,
+        voltCard: null,
+        trumpHolderId: null,
+        currentTrick: { cards: [], leadSuit: null, winnerId: null },
+        completedTricks: [],
+        phase: 'DEALING' as const,
+        matchScore: newMatchScore,
+        lastRoundResult: roundResult,
+        previousRoundWasEggs: wasEggs,
+      };
+
+      return dealRound(newState);
     }
 
     case 'START_PLAYING': {
@@ -193,36 +207,79 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case 'RESET_MATCH': {
+      return createInitialState(state.winThreshold, state.playerNames);
+    }
+
     default:
       return state;
   }
 }
 
 function dealRound(state: GameState): GameState {
-  const { hands, voltCard } = dealCards(state.dealerId);
+  const dealerId = state.dealerId;
+  const { hands, voltCard } = dealCards(dealerId);
 
-  // Determine trump suit and update suit assignment if needed
-  let trumpSuit: Suit | null = null;
-  let newSuitAssignment = { ...state.suitAssignment };
+  // Determine trump suit
+  let trumpSuit = state.trumpSuit;
+  let trumpHolderId = state.trumpHolderId;
+  let teamAssignment = state.teamAssignment;
+  let suitAssignment = state.suitAssignment;
 
   if (state.round === 1) {
-    // Round 1: trump is always Clubs, determine suit assignment from jacks
+    // Round 1: trump is always clubs
     trumpSuit = 'clubs';
 
-    // Find which player has which jack and assign suits
-    for (const playerId of [0, 1, 2, 3] as PlayerId[]) {
-      const hand = hands[playerId];
-      const jack = hand.find(c => c.rank === 'J');
-      if (jack) {
-        newSuitAssignment[playerId] = jack.suit;
+    // Find who has Валет Крести (Jack of Clubs)
+    for (let i = 0; i < 4; i++) {
+      const playerId = i as PlayerId;
+      const hasJackOfClubs = hands[playerId].some(c => c.rank === 'J' && c.suit === 'clubs');
+      if (hasJackOfClubs) {
+        trumpHolderId = playerId;
+        // Black team: this player + opposite
+        const oppositePlayer = (playerId + 2) % 4 as PlayerId;
+        teamAssignment = {
+          [playerId]: 'black',
+          [oppositePlayer]: 'black',
+          [(playerId + 1) % 4]: 'red',
+          [(playerId + 3) % 4]: 'red',
+        } as Record<PlayerId, Team>;
+        break;
+      }
+    }
+
+    // Set suit assignments based on which jack each player has
+    for (let i = 0; i < 4; i++) {
+      const playerId = i as PlayerId;
+      const jacks = hands[playerId].filter(c => c.rank === 'J');
+      if (jacks.length > 0) {
+        suitAssignment[playerId] = jacks[0].suit;
       }
     }
   } else {
-    // Round 2+: determine trump from suit assignment and current jacks
-    trumpSuit = determineTrumpSuit(state.round, newSuitAssignment, hands);
+    // Rounds 2+: determine trump based on suit assignment
+    // Find player whose assigned suit is not yet played as trump this match
+    // For now, use the dealer's assigned suit
+    const dealerAssignedSuit = suitAssignment[dealerId];
+    if (dealerAssignedSuit) {
+      trumpSuit = dealerAssignedSuit;
+      // Find who has the jack of this suit
+      for (let i = 0; i < 4; i++) {
+        const playerId = i as PlayerId;
+        const hasJack = hands[playerId].some(c => c.rank === 'J' && c.suit === trumpSuit);
+        if (hasJack) {
+          trumpHolderId = playerId;
+          break;
+        }
+      }
+    }
   }
 
-  // Sort all hands
+  // Get volt card (last card dealt to dealer)
+  const dealerHand = hands[dealerId];
+  const volt = dealerHand[dealerHand.length - 1] || null;
+
+  // Sort hands
   const sortedHands = {
     0: sortHand(hands[0], trumpSuit),
     1: sortHand(hands[1], trumpSuit),
@@ -230,17 +287,18 @@ function dealRound(state: GameState): GameState {
     3: sortHand(hands[3], trumpSuit),
   };
 
-  const first = firstPlayer(state.dealerId);
+  // First player to play is the one after dealer
+  const firstPlayerId = (dealerId + 1) % 4 as PlayerId;
 
   return {
     ...state,
-    suitAssignment: newSuitAssignment,
     hands: sortedHands,
     trumpSuit,
-    voltCard,
-    currentPlayerId: first,
-    currentTrick: { cards: [], leadSuit: null, winnerId: null },
-    completedTricks: [],
+    voltCard: volt,
+    trumpHolderId,
+    teamAssignment,
+    suitAssignment,
+    currentPlayerId: firstPlayerId,
     phase: 'TRUMP_REVEALED',
   };
 }

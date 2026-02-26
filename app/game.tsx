@@ -75,8 +75,8 @@ export default function GameTableScreen() {
 
       {/* Score bar */}
       <ScoreBar
-        usScore={matchScore.us}
-        themScore={matchScore.them}
+        blackScore={matchScore.black}
+        redScore={matchScore.red}
         winThreshold={winThreshold}
         round={round}
       />

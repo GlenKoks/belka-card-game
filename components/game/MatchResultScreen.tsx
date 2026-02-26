@@ -2,12 +2,12 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 
 interface MatchResultScreenProps {
-  matchScore: { us: number; them: number };
+  matchScore: { black: number; red: number };
   onNewGame: () => void;
 }
 
 export function MatchResultScreen({ matchScore, onNewGame }: MatchResultScreenProps) {
-  const weWon = matchScore.us > matchScore.them;
+  const blackWon = matchScore.black > matchScore.red;
 
   return (
     <View style={styles.container}>
@@ -19,34 +19,34 @@ export function MatchResultScreen({ matchScore, onNewGame }: MatchResultScreenPr
         <Text style={styles.suitRow}>♠ ♥ ♦ ♣</Text>
 
         <Text style={[styles.resultEmoji]}>
-          {weWon ? '🏆' : '😔'}
+          {blackWon ? '🏆' : '🏆'}
         </Text>
 
-        <Text style={[styles.resultTitle, { color: weWon ? '#F5C842' : '#E53935' }]}>
-          {weWon ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ'}
+        <Text style={[styles.resultTitle, { color: blackWon ? '#1a1a1a' : '#E53935' }]}>
+          {blackWon ? 'ЧЁРНЫЕ ПОБЕДИЛИ!' : 'КРАСНЫЕ ПОБЕДИЛИ!'}
         </Text>
 
         <Text style={styles.subtitle}>
-          {weWon
-            ? 'Ваша команда выиграла матч!'
-            : 'Противники выиграли этот матч'}
+          {blackWon
+            ? 'Чёрная команда выиграла матч!'
+            : 'Красная команда выиграла матч'}
         </Text>
 
         {/* Final score */}
         <View style={styles.scoreCard}>
-          <Text style={styles.scoreLabel}>ФИНАЛЬНЫЙ СЧЁТ</Text>
+          <Text style={styles.scoreLabel}>ФИНАЛЬНЫЙ СЧЁТ (ГЛАЗА)</Text>
           <View style={styles.scoreRow}>
             <View style={styles.scoreBlock}>
-              <Text style={styles.teamName}>МЫ</Text>
-              <Text style={[styles.scoreNum, weWon && styles.winnerScore]}>
-                {matchScore.us}
+              <Text style={styles.teamName}>ЧЁРНЫЕ</Text>
+              <Text style={[styles.scoreNum, blackWon && styles.winnerScore]}>
+                {matchScore.black}
               </Text>
             </View>
             <Text style={styles.scoreSep}>:</Text>
             <View style={styles.scoreBlock}>
-              <Text style={styles.teamName}>ОНИ</Text>
-              <Text style={[styles.scoreNum, !weWon && styles.winnerScore]}>
-                {matchScore.them}
+              <Text style={styles.teamName}>КРАСНЫЕ</Text>
+              <Text style={[styles.scoreNum, !blackWon && styles.winnerScore]}>
+                {matchScore.red}
               </Text>
             </View>
           </View>

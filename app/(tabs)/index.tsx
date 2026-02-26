@@ -46,12 +46,12 @@ export default function HomeScreen() {
             <View style={styles.activeScoreRow}>
               <View style={styles.activeScoreBlock}>
                 <Text style={styles.activeScoreTeam}>МЫ</Text>
-                <Text style={styles.activeScoreNum}>{matchScore.us}</Text>
+                <Text style={styles.activeScoreNum}>{matchScore.black}</Text>
               </View>
               <Text style={styles.activeScoreSep}>:</Text>
               <View style={styles.activeScoreBlock}>
                 <Text style={styles.activeScoreTeam}>ОНИ</Text>
-                <Text style={styles.activeScoreNum}>{matchScore.them}</Text>
+                <Text style={styles.activeScoreNum}>{matchScore.red}</Text>
               </View>
             </View>
             <Text style={styles.activeRound}>Раунд {round} • до {winThreshold} очков</Text>

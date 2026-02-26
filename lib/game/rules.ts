@@ -1,4 +1,4 @@
-import { Card, PlayerId, Suit, Team, Trick, TrickCard, RoundResult, Rank } from './types';
+import { Card, Suit, Rank, Trick, Team, PlayerId, RoundResult } from './types';
 import { RANK_ORDER } from './deck';
 
 /**
@@ -50,45 +50,92 @@ export function getValidCards(
     return hand;
   }
 
-  // Check if lead card is a jack (jacks have no suit, they are trump)
+  // Check if lead card is a Jack
   const leadCard = cards[0]?.card;
   const leadIsJack = leadCard?.rank === 'J';
 
   if (leadIsJack) {
-    // Jack was led → must play trump/jack only
-    const trumpCards = hand.filter(c => c.suit === trumpSuit || c.rank === 'J');
-    if (trumpCards.length > 0) return trumpCards;
-    // No trump/jack → play any card
-    return hand;
+    // Jack was led: must play trump or jack
+    const trumpAndJacks = hand.filter(c => c.rank === 'J' || c.suit === trumpSuit);
+    return trumpAndJacks.length > 0 ? trumpAndJacks : hand;
   }
 
-  // Regular card was led → follow lead suit (but jacks are trump, not their suit)
+  // Regular card was led: must follow suit (but not jacks, which are trump)
   const suitCards = hand.filter(c => c.suit === leadSuit && c.rank !== 'J');
-  if (suitCards.length > 0) return suitCards;
+  if (suitCards.length > 0) {
+    return suitCards;
+  }
 
-  // No lead suit cards — must play trump/jack if available
-  const trumpCards = hand.filter(c => c.suit === trumpSuit || c.rank === 'J');
-  if (trumpCards.length > 0) return trumpCards;
+  // No suit cards: must play trump or jack
+  const trumpAndJacks = hand.filter(c => c.rank === 'J' || c.suit === trumpSuit);
+  if (trumpAndJacks.length > 0) {
+    return trumpAndJacks;
+  }
 
-  // No suit, no trump — play anything
+  // No trump/jacks: play any card
   return hand;
 }
 
 /**
- * Determine the winner of a completed trick (4 cards played).
- * Jacks are always trump and beat all other cards.
- * Jack hierarchy: clubs > spades > hearts > diamonds
+ * Determine the winner of a trick
  */
-export function determineTrickWinner(trick: Trick, trumpSuit: Suit | null): PlayerId {
-  const { cards, leadSuit } = trick;
-  if (cards.length !== 4) throw new Error('Trick must have 4 cards to determine winner');
+export function determineTrickWinner(
+  trick: Trick,
+  trumpSuit: Suit | null
+): PlayerId | null {
+  if (trick.cards.length === 0) return null;
 
-  let winner = cards[0];
+  let winner = trick.cards[0];
+  let winnerRank = RANK_ORDER[winner.card.rank];
+  let winnerIsJack = winner.card.rank === 'J';
+  let winnerJackOrder = winnerIsJack ? JACK_ORDER[winner.card.suit] : -1;
 
-  for (let i = 1; i < cards.length; i++) {
-    const challenger = cards[i];
-    if (beats(challenger.card, winner.card, leadSuit!, trumpSuit)) {
-      winner = challenger;
+  for (let i = 1; i < trick.cards.length; i++) {
+    const card = trick.cards[i].card;
+    const isJack = card.rank === 'J';
+    const jackOrder = isJack ? JACK_ORDER[card.suit] : -1;
+
+    // Jacks always beat non-jacks
+    if (isJack && !winnerIsJack) {
+      winner = trick.cards[i];
+      winnerRank = RANK_ORDER[card.rank];
+      winnerIsJack = true;
+      winnerJackOrder = jackOrder;
+      continue;
+    }
+
+    // Both jacks: higher jack wins
+    if (isJack && winnerIsJack) {
+      if (jackOrder > winnerJackOrder) {
+        winner = trick.cards[i];
+        winnerJackOrder = jackOrder;
+      }
+      continue;
+    }
+
+    // Neither is jack
+    if (!isJack && !winnerIsJack) {
+      // Trump beats non-trump
+      const cardIsTrump = card.suit === trumpSuit;
+      const winnerIsTrump = winner.card.suit === trumpSuit;
+
+      if (cardIsTrump && !winnerIsTrump) {
+        winner = trick.cards[i];
+        winnerRank = RANK_ORDER[card.rank];
+        continue;
+      }
+
+      if (!cardIsTrump && winnerIsTrump) {
+        continue;
+      }
+
+      // Same suit: higher rank wins
+      if (card.suit === winner.card.suit) {
+        if (RANK_ORDER[card.rank] > winnerRank) {
+          winner = trick.cards[i];
+          winnerRank = RANK_ORDER[card.rank];
+        }
+      }
     }
   }
 
@@ -96,161 +143,100 @@ export function determineTrickWinner(trick: Trick, trumpSuit: Suit | null): Play
 }
 
 /**
- * Returns true if challenger beats current best card.
- * Jack hierarchy: clubs (1st) > spades (2nd) > hearts (3rd) > diamonds (4th)
+ * Calculate card points for a team from their tricks
  */
-function beats(
-  challenger: Card,
-  current: Card,
-  leadSuit: Suit,
-  trumpSuit: Suit | null
-): boolean {
-  const challengerIsJack = challenger.rank === 'J';
-  const currentIsJack = current.rank === 'J';
-
-  // Both jacks — higher jack wins
-  if (challengerIsJack && currentIsJack) {
-    return JACK_ORDER[challenger.suit] > JACK_ORDER[current.suit];
-  }
-
-  // Challenger is jack, current is not — jack wins
-  if (challengerIsJack && !currentIsJack) return true;
-
-  // Current is jack, challenger is not — jack wins
-  if (!challengerIsJack && currentIsJack) return false;
-
-  // Neither is jack — use normal trump/lead suit logic
-  const challengerIsTrump = trumpSuit !== null && challenger.suit === trumpSuit;
-  const currentIsTrump = trumpSuit !== null && current.suit === trumpSuit;
-  const challengerIsLead = challenger.suit === leadSuit;
-  const currentIsLead = current.suit === leadSuit;
-
-  // Trump beats non-trump
-  if (challengerIsTrump && !currentIsTrump) return true;
-  if (!challengerIsTrump && currentIsTrump) return false;
-
-  // Both trump — higher rank wins
-  if (challengerIsTrump && currentIsTrump) {
-    return RANK_ORDER[challenger.rank] > RANK_ORDER[current.rank];
-  }
-
-  // No trump involved — lead suit beats off-suit
-  if (challengerIsLead && !currentIsLead) return true;
-  if (!challengerIsLead && currentIsLead) return false;
-
-  // Both same suit — higher rank wins
-  if (challenger.suit === current.suit) {
-    return RANK_ORDER[challenger.rank] > RANK_ORDER[current.rank];
-  }
-
-  // Different off-suits — first played wins (challenger doesn't beat)
-  return false;
-}
-
-/**
- * Get team for a player ID.
- * Team "us" = players 0 and 2
- * Team "them" = players 1 and 3
- */
-export function getTeam(playerId: PlayerId): Team {
-  return playerId === 0 || playerId === 2 ? 'us' : 'them';
-}
-
-/**
- * Calculate round result from completed tricks.
- * Scoring: team with higher card points wins 2 points
- * Card points: K=4, Q=3, J=2, 10=10, A=11
- */
-export function calculateRoundResult(completedTricks: Trick[]): RoundResult {
-  const trickCounts: Record<PlayerId, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
-  const cardPoints: Record<PlayerId, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
-
-  for (const trick of completedTricks) {
-    if (trick.winnerId !== null) {
-      trickCounts[trick.winnerId]++;
-
-      // Add card points for all cards in this trick to the winner
-      for (const { card } of trick.cards) {
-        cardPoints[trick.winnerId] += CARD_POINTS[card.rank];
+export function calculateCardPoints(
+  tricks: Trick[],
+  teamPlayers: PlayerId[]
+): number {
+  let points = 0;
+  for (const trick of tricks) {
+    if (trick.winnerId !== null && teamPlayers.includes(trick.winnerId)) {
+      for (const trickCard of trick.cards) {
+        points += CARD_POINTS[trickCard.card.rank];
       }
     }
   }
-
-  const teamTricks = {
-    us: trickCounts[0] + trickCounts[2],
-    them: trickCounts[1] + trickCounts[3],
-  };
-
-  const teamCardPoints = {
-    us: cardPoints[0] + cardPoints[2],
-    them: cardPoints[1] + cardPoints[3],
-  };
-
-  const pointsEarned = { us: 0, them: 0 };
-
-  // Team with higher card points wins 2 points
-  if (teamCardPoints.us > teamCardPoints.them) {
-    pointsEarned.us = 2;
-  } else if (teamCardPoints.them > teamCardPoints.us) {
-    pointsEarned.them = 2;
-  }
-  // If equal, no points awarded
-
-  return { trickCounts, teamTricks, cardPoints: teamCardPoints, pointsEarned };
+  return points;
 }
 
 /**
- * Get next player clockwise.
+ * Calculate Eyes earned based on opponent points and trump holder
+ * trumpHolderId: player who has the trump-determining jack
+ * winnerTeam: team that won the round
  */
-export function nextPlayer(playerId: PlayerId): PlayerId {
-  return ((playerId + 1) % 4) as PlayerId;
-}
+export function calculateEyes(
+  blackPoints: number,
+  redPoints: number,
+  blackTricks: number,
+  redTricks: number,
+  trumpHolderId: PlayerId | null,
+  teamAssignment: Record<PlayerId, Team>,
+  previousRoundWasEggs: boolean
+): { black: number; red: number; wasEggs: boolean } {
+  // Determine winner and loser
+  const blackWon = blackPoints > redPoints;
+  const redWon = redPoints > blackPoints;
+  const isEggs = blackPoints === redPoints;
 
-/**
- * Get player to the left of dealer (first to play).
- */
-export function firstPlayer(dealerId: PlayerId): PlayerId {
-  return nextPlayer(dealerId);
-}
-
-/**
- * Determine suit assignment for a player based on their jack in round 1.
- * Jack of Clubs → Clubs
- * Jack of Spades → Spades
- * Jack of Hearts → Hearts
- * Jack of Diamonds → Diamonds
- */
-export function getSuitForJack(jackSuit: Suit): Suit {
-  return jackSuit;
-}
-
-/**
- * Determine trump suit for a round based on suit assignments and which player has the jack.
- * In round 1, trump is always Clubs.
- * In round 2+, trump is determined by which player has the jack for their assigned suit.
- */
-export function determineTrumpSuit(
-  round: number,
-  suitAssignment: Record<PlayerId, Suit | null>,
-  hands: Record<PlayerId, Card[]>
-): Suit | null {
-  if (round === 1) {
-    return 'clubs'; // Round 1 trump is always Clubs
+  if (isEggs) {
+    return { black: 0, red: 0, wasEggs: true };
   }
 
-  // Round 2+: find which player has the jack for their assigned suit
-  for (const playerId of [0, 1, 2, 3] as PlayerId[]) {
-    const assignedSuit = suitAssignment[playerId];
-    if (assignedSuit === null) continue;
+  // Determine if opponent got 0 tricks (all 9 tricks to winner)
+  const blackGotAllTricks = blackTricks === 9 && redTricks === 0;
+  const redGotAllTricks = redTricks === 9 && blackTricks === 0;
 
-    const hand = hands[playerId];
-    const hasJack = hand.some(c => c.rank === 'J' && c.suit === assignedSuit);
+  // If previous round was Eggs, next winner gets 4 Eyes
+  if (previousRoundWasEggs) {
+    if (blackWon) return { black: 4, red: 0, wasEggs: false };
+    if (redWon) return { black: 0, red: 4, wasEggs: false };
+  }
 
-    if (hasJack) {
-      return assignedSuit;
+  // Determine if trump is with winner or loser
+  const trumpHolderTeam = trumpHolderId !== null ? teamAssignment[trumpHolderId] : null;
+
+  // All 9 tricks to one team
+  if (blackGotAllTricks) {
+    return { black: 12, red: 0, wasEggs: false };
+  }
+  if (redGotAllTricks) {
+    return { black: 0, red: 12, wasEggs: false };
+  }
+
+  // Black won
+  if (blackWon) {
+    const opponentPoints = redPoints;
+    const trumpWithWinner = trumpHolderTeam === 'black';
+
+    if (opponentPoints < 14) {
+      return { black: trumpWithWinner ? 5 : 6, red: 0, wasEggs: false };
+    } else if (opponentPoints <= 30) {
+      // Check if it's a "save" (opponent has 14-30 points)
+      // If trump with loser, it's a save (4 eyes), otherwise 3 eyes
+      const eyes = trumpWithWinner ? 3 : 4;
+      return { black: eyes, red: 0, wasEggs: false };
+    } else {
+      // opponentPoints >= 31
+      return { black: trumpWithWinner ? 1 : 2, red: 0, wasEggs: false };
     }
   }
 
-  // Fallback (shouldn't happen if game state is correct)
-  return 'clubs';
+  // Red won
+  if (redWon) {
+    const opponentPoints = blackPoints;
+    const trumpWithWinner = trumpHolderTeam === 'red';
+
+    if (opponentPoints < 14) {
+      return { black: 0, red: trumpWithWinner ? 5 : 6, wasEggs: false };
+    } else if (opponentPoints <= 30) {
+      const eyes = trumpWithWinner ? 3 : 4;
+      return { black: 0, red: eyes, wasEggs: false };
+    } else {
+      // opponentPoints >= 31
+      return { black: 0, red: trumpWithWinner ? 1 : 2, wasEggs: false };
+    }
+  }
+
+  return { black: 0, red: 0, wasEggs: false };
 }

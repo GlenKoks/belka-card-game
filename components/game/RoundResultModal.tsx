@@ -1,11 +1,10 @@
-import React from 'react';
 import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
 import { RoundResult } from '@/lib/game/types';
 
 interface RoundResultModalProps {
   visible: boolean;
   result: RoundResult | null;
-  matchScore: { us: number; them: number };
+  matchScore: { black: number; red: number };
   winThreshold: number;
   onNextRound: () => void;
 }
@@ -19,21 +18,26 @@ export function RoundResultModal({
 }: RoundResultModalProps) {
   if (!result) return null;
 
-  const usWon = result.pointsEarned.us > 0;
-  const themWon = result.pointsEarned.them > 0;
+  const blackWon = result.eyesEarned.black > 0;
+  const redWon = result.eyesEarned.red > 0;
+  const isEggs = result.wasEggs;
 
-  let resultTitle = 'Ничья';
-  let resultColor = '#A8C5A0';
-  let pointsText = '';
+  let resultTitle = 'Яйца!';
+  let resultColor = '#FFB800';
+  let eyesText = '';
 
-  if (usWon) {
-    resultTitle = '✅ Победа в раунде!';
-    resultColor = '#4CAF50';
-    pointsText = `+${result.pointsEarned.us} очко в матче`;
-  } else if (themWon) {
-    resultTitle = '❌ Раунд проигран';
+  if (isEggs) {
+    resultTitle = '🥚 Яйца! Баллы не начислены';
+    resultColor = '#FFB800';
+    eyesText = 'В следующем раунде победитель получит 4 Глаза';
+  } else if (blackWon) {
+    resultTitle = '✅ Чёрные победили!';
+    resultColor = '#1a1a1a';
+    eyesText = `+${result.eyesEarned.black} Глаз`;
+  } else if (redWon) {
+    resultTitle = '✅ Красные победили!';
     resultColor = '#E53935';
-    pointsText = `Противники получают +${result.pointsEarned.them}`;
+    eyesText = `+${result.eyesEarned.red} Глаз`;
   }
 
   return (
@@ -50,14 +54,14 @@ export function RoundResultModal({
           <View style={styles.pointsRow}>
             <View style={styles.pointBlock}>
               <Text style={styles.pointLabel}>Баллы</Text>
-              <Text style={styles.pointValue}>{result.cardPoints.us}</Text>
-              <Text style={styles.pointSub}>ваша команда</Text>
+              <Text style={styles.pointValue}>{result.cardPoints.black}</Text>
+              <Text style={styles.pointSub}>Чёрные</Text>
             </View>
             <Text style={styles.pointSep}>vs</Text>
             <View style={styles.pointBlock}>
               <Text style={styles.pointLabel}>Баллы</Text>
-              <Text style={styles.pointValue}>{result.cardPoints.them}</Text>
-              <Text style={styles.pointSub}>противники</Text>
+              <Text style={styles.pointValue}>{result.cardPoints.red}</Text>
+              <Text style={styles.pointSub}>Красные</Text>
             </View>
           </View>
 
@@ -65,27 +69,35 @@ export function RoundResultModal({
           <View style={styles.tricksRow}>
             <View style={styles.trickBlock}>
               <Text style={styles.trickLabel}>Взятки</Text>
-              <Text style={styles.trickCount}>{result.teamTricks.us}</Text>
+              <Text style={styles.trickCount}>{result.teamTricks.black}</Text>
             </View>
             <Text style={styles.trickSep}>vs</Text>
             <View style={styles.trickBlock}>
               <Text style={styles.trickLabel}>Взятки</Text>
-              <Text style={styles.trickCount}>{result.teamTricks.them}</Text>
+              <Text style={styles.trickCount}>{result.teamTricks.red}</Text>
             </View>
           </View>
 
-          {/* Points */}
-          {pointsText ? (
-            <Text style={[styles.pointsText, { color: resultColor }]}>{pointsText}</Text>
+          {/* Eyes earned */}
+          {eyesText ? (
+            <Text style={[styles.eyesText, { color: resultColor }]}>{eyesText}</Text>
           ) : null}
 
           {/* Match score */}
           <View style={styles.matchScore}>
-            <Text style={styles.matchScoreLabel}>Счёт матча</Text>
-            <Text style={styles.matchScoreValue}>
-              {matchScore.us} : {matchScore.them}
-            </Text>
-            <Text style={styles.matchScoreSub}>до {winThreshold} очков</Text>
+            <Text style={styles.matchScoreLabel}>Счёт матча (Глаза)</Text>
+            <View style={styles.matchScoreRow}>
+              <View style={styles.teamScore}>
+                <Text style={styles.teamScoreLabel}>Чёрные</Text>
+                <Text style={styles.matchScoreValue}>{matchScore.black}</Text>
+              </View>
+              <Text style={styles.matchScoreSep}>:</Text>
+              <View style={styles.teamScore}>
+                <Text style={styles.teamScoreLabel}>Красные</Text>
+                <Text style={styles.matchScoreValue}>{matchScore.red}</Text>
+              </View>
+            </View>
+            <Text style={styles.matchScoreSub}>до {winThreshold} Глаз</Text>
           </View>
 
           <Pressable
@@ -103,130 +115,157 @@ export function RoundResultModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
   },
   card: {
-    backgroundColor: '#1A5C32',
-    borderRadius: 20,
-    padding: 28,
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'center',
+    backgroundColor: '#1a2a1a',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
     borderWidth: 2,
-    borderColor: '#F5C842',
-    gap: 16,
+    borderColor: '#2E7D4F',
   },
   title: {
-    color: '#A8C5A0',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   resultTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
-  },
-  tricksRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-  },
-  trickBlock: {
-    alignItems: 'center',
-    minWidth: 60,
-  },
-  trickLabel: {
-    color: '#A8C5A0',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  trickCount: {
-    color: '#FFFFFF',
-    fontSize: 36,
-    fontWeight: '800',
-  },
-  trickSub: {
-    color: '#A8C5A0',
-    fontSize: 10,
-  },
-  trickSep: {
-    color: '#A8C5A0',
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: 16,
   },
   pointsRow: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    gap: 16,
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#2E7D4F',
   },
   pointBlock: {
     alignItems: 'center',
-    minWidth: 60,
+    flex: 1,
   },
   pointLabel: {
+    fontSize: 11,
     color: '#A8C5A0',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   pointValue: {
-    color: '#F5C842',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
+    color: '#F5C842',
   },
   pointSub: {
+    fontSize: 10,
     color: '#A8C5A0',
-    fontSize: 9,
+    marginTop: 2,
   },
   pointSep: {
-    color: '#A8C5A0',
     fontSize: 14,
-    fontWeight: '600',
+    color: '#A8C5A0',
+    marginHorizontal: 8,
   },
-  pointsText: {
-    fontSize: 18,
+  tricksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#2E7D4F',
+  },
+  trickBlock: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  trickLabel: {
+    fontSize: 11,
+    color: '#A8C5A0',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  trickCount: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  trickSep: {
+    fontSize: 14,
+    color: '#A8C5A0',
+    marginHorizontal: 8,
+  },
+  eyesText: {
+    fontSize: 16,
     fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   matchScore: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(46, 125, 79, 0.2)',
+    borderRadius: 8,
     padding: 12,
-    width: '100%',
+    marginBottom: 16,
   },
   matchScoreLabel: {
+    fontSize: 11,
     color: '#A8C5A0',
-    fontSize: 10,
     fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  matchScoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  teamScore: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  teamScoreLabel: {
+    fontSize: 10,
+    color: '#A8C5A0',
+    marginBottom: 4,
   },
   matchScoreValue: {
-    color: '#F5C842',
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: '800',
+    color: '#F5C842',
+  },
+  matchScoreSep: {
+    fontSize: 16,
+    color: '#A8C5A0',
+    marginHorizontal: 8,
   },
   matchScoreSub: {
-    color: '#A8C5A0',
     fontSize: 10,
+    color: '#A8C5A0',
+    textAlign: 'center',
   },
   button: {
-    backgroundColor: '#F5C842',
-    borderRadius: 14,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    width: '100%',
-    alignItems: 'center',
+    backgroundColor: '#2E7D4F',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 8,
   },
   buttonText: {
-    color: '#0A3D1F',
-    fontSize: 16,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
