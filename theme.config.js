@@ -1,14 +1,15 @@
 /** @type {const} */
 const themeColors = {
-  primary: { light: '#0a7ea4', dark: '#0a7ea4' },
-  background: { light: '#ffffff', dark: '#151718' },
-  surface: { light: '#f5f5f5', dark: '#1e2022' },
-  foreground: { light: '#11181C', dark: '#ECEDEE' },
-  muted: { light: '#687076', dark: '#9BA1A6' },
-  border: { light: '#E5E7EB', dark: '#334155' },
-  success: { light: '#22C55E', dark: '#4ADE80' },
-  warning: { light: '#F59E0B', dark: '#FBBF24' },
-  error: { light: '#EF4444', dark: '#F87171' },
+  primary:    { light: '#F5C842', dark: '#F5C842' },   // Gold — trump, highlights
+  background: { light: '#0A3D1F', dark: '#0A3D1F' },   // Dark green felt
+  surface:    { light: '#1A5C32', dark: '#1A5C32' },   // Lighter green for panels
+  foreground: { light: '#FFFFFF', dark: '#FFFFFF' },   // White text
+  muted:      { light: '#A8C5A0', dark: '#A8C5A0' },   // Muted green-white
+  border:     { light: '#2E7D4F', dark: '#2E7D4F' },   // Subtle green border
+  success:    { light: '#4CAF50', dark: '#4ADE80' },   // Win states
+  warning:    { light: '#F5C842', dark: '#FBBF24' },   // Warning (same as gold)
+  error:      { light: '#E53935', dark: '#F87171' },   // Red suits / errors
+  tint:       { light: '#F5C842', dark: '#F5C842' },   // Tab bar active
 };
 
 module.exports = { themeColors };

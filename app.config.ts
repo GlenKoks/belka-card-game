@@ -28,11 +28,11 @@ const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
   // App branding - update these values directly (do not use env vars)
-  appName: "Белка — Карточная Игра",
+  appName: "Белка",
   appSlug: "belka-card-game",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "",
+  logoUrl: "https://private-us-east-1.manuscdn.com/sessionFile/MxpUVu3yPjNDwvek0LbRl6/sandbox/UkPnBUIxe8hrzUDNwD5xeY-img-1_1772111309000_na1fn_YmVsa2EtaWNvbg.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvTXhwVVZ1M3lQak5Ed3ZlazBMYlJsNi9zYW5kYm94L1VrUG5CVUl4ZThocnpVRE53RDV4ZVktaW1nLTFfMTc3MjExMTMwOTAwMF9uYTFmbl9ZbVZzYTJFdGFXTnZiZy5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=KswE9o0~ePiaWt-65gYtvvf1uQ5aGVh7tK39COTXapd~Bierk7WNfqPXF1UZLbA29sMOkS6zMWIv4562DcVB3j7jVJ1soVH9KHzNtWm8kBAooP2vT8UgV1OmttgnT9bjpijE8Iz3XOO7mBLmCLwBO8arojZte3I1~L7URj98oFU-lnuI91qz3jgKiwmLZyPvkrJrLDfHD94aDXP-cK-hQl3cIvDVYyt98Dy-VkT2UY42NE6HxEWAVnB~mDkxAbFsb32TmaokClHb3uLZBOKpojaxViCZvMBLZoUhDie4TcdqmZInVIdgVqrt81wCm-T530ZgdQ~aEeQJYQCwg3teLg__",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
