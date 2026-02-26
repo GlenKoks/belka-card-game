@@ -47,6 +47,10 @@
 - [x] Jacks have no suit - they are always trump
 - [x] Cannot play jack when following suit (jack is not a suit card)
 
+## UI Improvements
+- [x] Move trump badge to top-left to avoid overlapping right player card
+- [x] Add lead suit indicator at top-right showing which suit was led
+
 ## Completed (Previous)
 - [x] App logo generated
 - [x] Theme colors updated (green felt)

@@ -108,7 +108,7 @@ export default function GameTableScreen() {
 
           {/* Center: trick area + trump */}
           <View style={styles.centerArea}>
-            {/* Trump badge — top right of center */}
+            {/* Trump badge — top left of center */}
             <View style={styles.trumpContainer}>
               <TrumpBadge suit={trumpSuit} />
               {voltCard && (
@@ -117,6 +117,13 @@ export default function GameTableScreen() {
                 </View>
               )}
             </View>
+
+            {/* Lead suit indicator — top right */}
+            {currentTrick.leadSuit && (
+              <View style={styles.leadSuitContainer}>
+                <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
+              </View>
+            )}
 
             {/* Phase status text */}
             {phaseText && (
@@ -224,7 +231,7 @@ const styles = StyleSheet.create({
   trumpContainer: {
     position: 'absolute',
     top: -36,
-    right: -4,
+    left: -4,
     zIndex: 10,
     alignItems: 'center',
     gap: 4,
@@ -292,5 +299,18 @@ const styles = StyleSheet.create({
   exitText: {
     color: '#A8C5A0',
     fontSize: 11,
+  },
+  leadSuitContainer: {
+    position: "absolute",
+    top: -36,
+    right: -4,
+    zIndex: 10,
+    alignItems: "center",
+  },
+  leadSuitText: {
+    color: "#F5C842",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1,
   },
 });
