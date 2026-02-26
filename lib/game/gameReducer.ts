@@ -191,10 +191,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         previousRoundWasEggs: wasEggs,
       };
 
-      // Deal cards for next round
+      // Deal cards for next round and auto-start playing
       const dealtState = dealRound(newState);
-      // Automatically transition to TRUMP_REVEALED phase
-      return { ...dealtState, phase: 'TRUMP_REVEALED' as const };
+      return { ...dealtState, phase: 'PLAYING_TRICK' as const };
     }
 
     case 'START_PLAYING': {
