@@ -119,7 +119,7 @@ export default function GameTableScreen() {
             </View>
 
             {/* Lead suit indicator — top right */}
-            {currentTrick.leadSuit && (
+            {currentTrick.leadSuit && phase !== 'ROUND_FINISHED' && (
               <View style={styles.leadSuitContainer}>
                 <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
               </View>
@@ -133,19 +133,23 @@ export default function GameTableScreen() {
             )}
 
             {/* Trick area */}
-            <TrickArea
-              trick={currentTrick}
-              playerNames={playerNames}
-              trumpSuit={trumpSuit}
-              phase={phase}
-            />
+            {phase !== 'ROUND_FINISHED' && (
+              <TrickArea
+                trick={currentTrick}
+                playerNames={playerNames}
+                trumpSuit={trumpSuit}
+                phase={phase}
+              />
+            )}
 
             {/* Trick score */}
-            <View style={styles.trickScore}>
-              <Text style={styles.trickScoreText}>
-                Взятки: {myTricks} — {theirTricks}
-              </Text>
-            </View>
+            {phase !== 'ROUND_FINISHED' && (
+              <View style={styles.trickScore}>
+                <Text style={styles.trickScoreText}>
+                  Взятки: {myTricks} — {theirTricks}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Right opponent (Player 3) */}
@@ -184,13 +188,15 @@ export default function GameTableScreen() {
       </View>
 
       {/* Round result modal */}
-      <RoundResultModal
-        visible={phase === 'ROUND_FINISHED'}
-        result={lastRoundResult}
-        matchScore={matchScore}
-        winThreshold={winThreshold}
-        onNextRound={nextRound}
-      />
+      {lastRoundResult && (
+        <RoundResultModal
+          visible={phase === 'ROUND_FINISHED'}
+          result={lastRoundResult}
+          matchScore={matchScore}
+          winThreshold={winThreshold}
+          onNextRound={nextRound}
+        />
+      )}
     </SafeAreaView>
   );
 }
