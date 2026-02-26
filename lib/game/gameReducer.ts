@@ -13,7 +13,6 @@ export type GameAction =
   | { type: 'PLAY_CARD'; playerId: PlayerId; card: Card }
   | { type: 'RESOLVE_TRICK' }
   | { type: 'NEXT_ROUND' }
-  | { type: 'START_NEXT_ROUND' }
   | { type: 'RESET_MATCH' }
   | { type: 'START_PLAYING' }
   | { type: 'UPDATE_SETTINGS'; winThreshold: number; playerNames: Record<PlayerId, string> };
@@ -172,7 +171,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      // Continue to next round - prepare state but don't deal yet
+      // Continue to next round - prepare state and deal cards immediately
       const nextRound = state.round + 1;
       const nextDealerId = (state.dealerId + 1) % 4 as PlayerId;
       const newState: GameState = {
@@ -192,7 +191,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         previousRoundWasEggs: wasEggs,
       };
 
-      return dealRound(newState);
+      // Deal cards for next round
+      const dealtState = dealRound(newState);
+      // Automatically transition to TRUMP_REVEALED phase
+      return { ...dealtState, phase: 'TRUMP_REVEALED' as const };
     }
 
     case 'START_PLAYING': {
@@ -206,14 +208,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         winThreshold: action.winThreshold,
         playerNames: action.playerNames,
       };
-    }
-
-    case 'START_NEXT_ROUND': {
-      // This action is called after RoundResultModal is dismissed
-      // It will deal cards for the next round
-      if (state.phase !== 'DEALING') return state;
-      const dealtState = dealRound(state);
-      return dealtState;
     }
 
     case 'RESET_MATCH': {
@@ -267,16 +261,14 @@ function dealRound(state: GameState): GameState {
     }
   } else {
     // Rounds 2+: determine trump based on suit assignment
-    // Find player whose assigned suit is not yet played as trump this match
-    // For now, use the dealer's assigned suit
-    const dealerAssignedSuit = suitAssignment[dealerId];
-    if (dealerAssignedSuit) {
-      trumpSuit = dealerAssignedSuit;
-      // Find who has the jack of this suit
-      for (let i = 0; i < 4; i++) {
-        const playerId = i as PlayerId;
-        const hasJack = hands[playerId].some(c => c.rank === 'J' && c.suit === trumpSuit);
+    // The player with the jack of their assigned suit determines the trump
+    for (let i = 0; i < 4; i++) {
+      const playerId = i as PlayerId;
+      const assignedSuit = suitAssignment[playerId];
+      if (assignedSuit) {
+        const hasJack = hands[playerId].some(c => c.rank === 'J' && c.suit === assignedSuit);
         if (hasJack) {
+          trumpSuit = assignedSuit;
           trumpHolderId = playerId;
           break;
         }

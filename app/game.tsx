@@ -15,7 +15,7 @@ import { VoltCard } from '@/components/game/VoltCard';
 import { Card } from '@/lib/game/types';
 
 export default function GameTableScreen() {
-  const { state, playCard, nextRound, startNextRound, startGame, getValidCardsForPlayer } = useGame();
+  const { state, playCard, nextRound, startGame, getValidCardsForPlayer } = useGame();
 
   const {
     phase,
@@ -194,7 +194,7 @@ export default function GameTableScreen() {
           result={lastRoundResult}
           matchScore={matchScore}
           winThreshold={winThreshold}
-          onNextRound={startNextRound}
+          onNextRound={nextRound}
         />
       )}
     </SafeAreaView>
