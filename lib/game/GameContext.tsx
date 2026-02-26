@@ -17,6 +17,7 @@ interface GameContextValue {
   playCard: (card: Card) => void;
   startGame: (winThreshold?: number, playerNames?: Record<PlayerId, string>) => void;
   nextRound: () => void;
+  startNextRound: () => void;
   resetMatch: () => void;
   getValidCardsForPlayer: (playerId: PlayerId) => Card[];
 }
@@ -105,6 +106,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'NEXT_ROUND' });
   }, [clearAITimer]);
 
+  const startNextRound = useCallback(() => {
+    clearAITimer();
+    dispatch({ type: 'START_NEXT_ROUND' });
+  }, [clearAITimer]);
+
   const resetMatch = useCallback(() => {
     clearAITimer();
     dispatch({ type: 'RESET_MATCH' });
@@ -122,7 +128,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <GameContext.Provider
-      value={{ state, dispatch, playCard, startGame, nextRound, resetMatch, getValidCardsForPlayer }}
+      value={{ state, dispatch, playCard, startGame, nextRound, startNextRound, resetMatch, getValidCardsForPlayer }}
     >
       {children}
     </GameContext.Provider>

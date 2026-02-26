@@ -87,16 +87,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   blackEye: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#333333',
+    backgroundColor: '#2a2a2a',
+    borderColor: '#555555',
   },
   redEye: {
-    backgroundColor: '#E53935',
-    borderColor: '#C62828',
+    backgroundColor: '#FF5252',
+    borderColor: '#E53935',
   },
   emptyEye: {
-    backgroundColor: 'transparent',
-    borderColor: '#555555',
+    backgroundColor: '#1a1a1a',
+    borderColor: '#333333',
   },
   teamLabel: {
     color: '#A8C5A0',

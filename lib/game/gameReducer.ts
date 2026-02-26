@@ -13,6 +13,7 @@ export type GameAction =
   | { type: 'PLAY_CARD'; playerId: PlayerId; card: Card }
   | { type: 'RESOLVE_TRICK' }
   | { type: 'NEXT_ROUND' }
+  | { type: 'START_NEXT_ROUND' }
   | { type: 'RESET_MATCH' }
   | { type: 'START_PLAYING' }
   | { type: 'UPDATE_SETTINGS'; winThreshold: number; playerNames: Record<PlayerId, string> };
@@ -171,7 +172,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      // Continue to next round
+      // Continue to next round - prepare state but don't deal yet
       const nextRound = state.round + 1;
       const nextDealerId = (state.dealerId + 1) % 4 as PlayerId;
       const newState: GameState = {
@@ -205,6 +206,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         winThreshold: action.winThreshold,
         playerNames: action.playerNames,
       };
+    }
+
+    case 'START_NEXT_ROUND': {
+      // This action is called after RoundResultModal is dismissed
+      // It will deal cards for the next round
+      if (state.phase !== 'DEALING') return state;
+      const dealtState = dealRound(state);
+      return dealtState;
     }
 
     case 'RESET_MATCH': {
