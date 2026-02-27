@@ -13,14 +13,6 @@ import { RoundResultModal } from '@/components/game/RoundResultModal';
 import { MatchResultScreen } from '@/components/game/MatchResultScreen';
 import { Card, Team } from '@/lib/game/types';
 
-const THEME = {
-  blue: '#227C9D',
-  mint: '#17C3B2',
-  amber: '#FFCB77',
-  cream: '#FEF9EF',
-  coral: '#FE6D73',
-};
-
 export default function GameTableScreen() {
   const { state, playCard, nextRound, startGame, getValidCardsForPlayer } = useGame();
 
@@ -100,8 +92,8 @@ export default function GameTableScreen() {
           />
         </View>
 
-        <View style={styles.middleRow}>
-          <View style={styles.sideOpponent}>
+        <View style={styles.gameArea}>
+          <View style={styles.topOpponent}>
             <OpponentHand
               cardCount={hands[1].length}
               name={playerNames[1]}
@@ -116,35 +108,31 @@ export default function GameTableScreen() {
               <TrumpBadge suit={trumpSuit} />
             </View>
 
-            {currentTrick.leadSuit && phase !== 'ROUND_FINISHED' && (
-              <View style={styles.leadSuitContainer}>
-                <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
+            <View style={styles.centerArea}>
+              <View style={styles.trumpContainer}>
+                <TrumpBadge suit={trumpSuit} />
               </View>
-            )}
 
-            {phaseText && (
-              <View style={styles.phaseTextContainer}>
-                <Text style={styles.phaseText}>{phaseText}</Text>
-              </View>
-            )}
+              {currentTrick.leadSuit && phase !== 'ROUND_FINISHED' && (
+                <View style={styles.leadSuitContainer}>
+                  <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
+                </View>
+              )}
 
-            {phase !== 'ROUND_FINISHED' && (
-              <TrickArea
-                trick={currentTrick}
-                playerNames={playerNames}
-                trumpSuit={trumpSuit}
-                phase={phase}
-              />
-            )}
+              {phaseText && (
+                <View style={styles.phaseTextContainer}>
+                  <Text style={styles.phaseText}>{phaseText}</Text>
+                </View>
+              )}
 
-            {phase !== 'ROUND_FINISHED' && (
-              <View style={styles.trickScore}>
-                <Text style={styles.trickScoreText}>
-                  Взятки: {myTricks} — {theirTricks}
-                </Text>
-              </View>
-            )}
-          </View>
+              {phase !== 'ROUND_FINISHED' && (
+                <TrickArea
+                  trick={currentTrick}
+                  playerNames={playerNames}
+                  trumpSuit={trumpSuit}
+                  phase={phase}
+                />
+              )}
 
           <View style={styles.sideOpponent}>
             <OpponentHand
@@ -158,12 +146,8 @@ export default function GameTableScreen() {
         </View>
 
         <View style={styles.playerHandArea}>
-          <View style={[
-            styles.playerLabel,
-            getTeamColor(0) === 'black' && styles.playerLabelBlack,
-            getTeamColor(0) === 'red' && styles.playerLabelRed,
-          ]}
-          >
+          {/* Player label */}
+          <View style={[styles.playerLabel, getTeamColor(0) === 'black' && styles.playerLabelBlack, getTeamColor(0) === 'red' && styles.playerLabelRed]}>
             <View style={[styles.turnIndicator, isMyTurn && styles.turnIndicatorActive]} />
             <Text style={styles.playerName}>{playerNames[0]}</Text>
             <Text style={styles.cardCountLabel}>{hands[0].length} карт</Text>
@@ -175,12 +159,26 @@ export default function GameTableScreen() {
             </Pressable>
           </View>
 
-          <PlayerHand
-            hand={hands[0]}
-            validCards={validCards}
-            onPlayCard={handlePlayCard}
-            isMyTurn={isMyTurn}
-          />
+          <View style={styles.playerHandArea}>
+            <View style={[styles.playerLabel, getTeamColor(0) === 'black' && styles.playerLabelBlack, getTeamColor(0) === 'red' && styles.playerLabelRed]}>
+              <View style={[styles.turnIndicator, isMyTurn && styles.turnIndicatorActive]} />
+              <Text style={styles.playerName}>{playerNames[0]}</Text>
+              <Text style={styles.cardCountLabel}>{hands[0].length} карт</Text>
+              <Pressable
+                style={styles.exitButton}
+                onPress={() => router.back()}
+              >
+                <Text style={styles.exitText}>← Меню</Text>
+              </Pressable>
+            </View>
+
+            <PlayerHand
+              hand={hands[0]}
+              validCards={validCards}
+              onPlayCard={handlePlayCard}
+              isMyTurn={isMyTurn}
+            />
+          </View>
         </View>
       </View>
 
@@ -203,13 +201,24 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.cream,
     padding: 8,
   },
+  tableFrame: {
+    flex: 1,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: THEME.wood,
+    borderWidth: 3,
+    borderColor: THEME.woodDark,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   gameArea: {
     flex: 1,
     paddingHorizontal: 8,
     paddingTop: 10,
     gap: 6,
     backgroundColor: '#D09B6B',
-    borderRadius: 20,
   },
   topOpponent: {
     alignItems: 'center',
@@ -239,6 +248,7 @@ const styles = StyleSheet.create({
     left: -4,
     zIndex: 10,
     alignItems: 'center',
+    gap: 4,
   },
   phaseTextContainer: {
     position: 'absolute',
@@ -275,18 +285,17 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginBottom: 4,
     gap: 6,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-    backgroundColor: 'rgba(254,249,239,0.7)',
+    borderColor: 'transparent',
   },
   playerLabelBlack: {
-    backgroundColor: 'rgba(34,124,157,0.2)',
-    borderColor: THEME.blue,
+    backgroundColor: 'rgba(40,40,40,0.65)',
+    borderColor: '#6F6F6F',
   },
   playerLabelRed: {
-    backgroundColor: 'rgba(254,109,115,0.22)',
-    borderColor: THEME.coral,
+    backgroundColor: 'rgba(183,28,28,0.45)',
+    borderColor: '#E57373',
   },
   turnIndicator: {
     width: 8,
