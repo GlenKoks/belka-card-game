@@ -134,7 +134,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 4,
+    paddingHorizontal: 4,
+    paddingTop: 5,
+    paddingBottom: 7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -174,10 +176,10 @@ const styles = StyleSheet.create({
   },
   rankText: {
     fontWeight: '700',
-    lineHeight: 16,
+    includeFontPadding: false,
   },
   suitSmall: {
-    lineHeight: 12,
+    includeFontPadding: false,
   },
   suitCenter: {
     fontWeight: '400',
