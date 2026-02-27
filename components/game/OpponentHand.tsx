@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Team } from '@/lib/game/types';
 import { CardComponent } from './CardComponent';
 
 interface OpponentHandProps {
@@ -7,9 +8,10 @@ interface OpponentHandProps {
   name: string;
   isCurrentPlayer: boolean;
   position: 'top' | 'left' | 'right';
+  team?: Team;
 }
 
-export function OpponentHand({ cardCount, name, isCurrentPlayer, position }: OpponentHandProps) {
+export function OpponentHand({ cardCount, name, isCurrentPlayer, position, team }: OpponentHandProps) {
   const isVertical = position === 'left' || position === 'right';
 
   const cards = Array.from({ length: cardCount }, (_, i) => i);
@@ -17,7 +19,7 @@ export function OpponentHand({ cardCount, name, isCurrentPlayer, position }: Opp
   return (
     <View style={[styles.container, isVertical ? styles.vertical : styles.horizontal]}>
       {/* Player name badge */}
-      <View style={[styles.nameBadge, isCurrentPlayer && styles.activeBadge]}>
+      <View style={[styles.nameBadge, team === 'black' && styles.blackTeamBadge, team === 'red' && styles.redTeamBadge, isCurrentPlayer && styles.activeBadge]}>
         {isCurrentPlayer && <View style={styles.turnDot} />}
         <Text style={styles.nameText} numberOfLines={1}>{name}</Text>
         <Text style={styles.cardCount}>{cardCount}</Text>
@@ -86,6 +88,15 @@ const styles = StyleSheet.create({
   },
   activeBadge: {
     borderColor: '#F5C842',
+  },
+
+  blackTeamBadge: {
+    backgroundColor: 'rgba(40,40,40,0.65)',
+    borderColor: '#6F6F6F',
+  },
+  redTeamBadge: {
+    backgroundColor: 'rgba(183,28,28,0.45)',
+    borderColor: '#E57373',
   },
   turnDot: {
     width: 6,
