@@ -43,7 +43,6 @@ export default function GameTableScreen() {
     playCard(card);
   };
 
-  // Match finished screen
   if (phase === 'MATCH_FINISHED') {
     return (
       <MatchResultScreen
@@ -55,17 +54,15 @@ export default function GameTableScreen() {
     );
   }
 
-  // Trick counts for display
   const myTricks = completedTricks.filter(t => t.winnerId === 0 || t.winnerId === 2).length;
   const theirTricks = completedTricks.filter(t => t.winnerId === 1 || t.winnerId === 3).length;
 
-  // Phase display text
   const getPhaseText = () => {
     switch (phase) {
       case 'TRUMP_REVEALED': return 'Козырь определён...';
       case 'TRICK_RESOLVED': return 'Взятка разыграна...';
       case 'PLAYING_TRICK':
-        if (currentPlayerId === 0) return null; // shown in PlayerHand
+        if (currentPlayerId === 0) return null;
         return `Ход: ${playerNames[currentPlayerId]}`;
       default: return null;
     }
@@ -75,7 +72,7 @@ export default function GameTableScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A3D1F" />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.cream} />
 
       {/* Score bar */}
       <ScoreBar
@@ -99,10 +96,8 @@ export default function GameTableScreen() {
           />
         </View>
 
-        {/* Middle row: left opponent, trick area, right opponent */}
-        <View style={styles.middleRow}>
-          {/* Left opponent (Player 1) */}
-          <View style={styles.sideOpponent}>
+        <View style={styles.gameArea}>
+          <View style={styles.topOpponent}>
             <OpponentHand
               cardCount={hands[1].length}
               name={playerNames[1]}
@@ -119,39 +114,31 @@ export default function GameTableScreen() {
               <TrumpBadge suit={trumpSuit} />
             </View>
 
-            {/* Lead suit indicator — top right */}
-            {currentTrick.leadSuit && phase !== 'ROUND_FINISHED' && (
-              <View style={styles.leadSuitContainer}>
-                <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
+            <View style={styles.centerArea}>
+              <View style={styles.trumpContainer}>
+                <TrumpBadge suit={trumpSuit} />
               </View>
-            )}
 
-            {/* Phase status text */}
-            {phaseText && (
-              <View style={styles.phaseTextContainer}>
-                <Text style={styles.phaseText}>{phaseText}</Text>
-              </View>
-            )}
+              {currentTrick.leadSuit && phase !== 'ROUND_FINISHED' && (
+                <View style={styles.leadSuitContainer}>
+                  <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
+                </View>
+              )}
 
-            {/* Trick area */}
-            {phase !== 'ROUND_FINISHED' && (
-              <TrickArea
-                trick={currentTrick}
-                playerNames={playerNames}
-                trumpSuit={trumpSuit}
-                phase={phase}
-              />
-            )}
+              {phaseText && (
+                <View style={styles.phaseTextContainer}>
+                  <Text style={styles.phaseText}>{phaseText}</Text>
+                </View>
+              )}
 
-            {/* Trick score */}
-            {phase !== 'ROUND_FINISHED' && (
-              <View style={styles.trickScore}>
-                <Text style={styles.trickScoreText}>
-                  Взятки: {myTricks} — {theirTricks}
-                </Text>
-              </View>
-            )}
-          </View>
+              {phase !== 'ROUND_FINISHED' && (
+                <TrickArea
+                  trick={currentTrick}
+                  playerNames={playerNames}
+                  trumpSuit={trumpSuit}
+                  phase={phase}
+                />
+              )}
 
           {/* Right opponent (Player 3) */}
           <View style={styles.sideOpponent}>
@@ -180,16 +167,29 @@ export default function GameTableScreen() {
             </Pressable>
           </View>
 
-          <PlayerHand
-            hand={hands[0]}
-            validCards={validCards}
-            onPlayCard={handlePlayCard}
-            isMyTurn={isMyTurn}
-          />
+          <View style={styles.playerHandArea}>
+            <View style={[styles.playerLabel, getTeamColor(0) === 'black' && styles.playerLabelBlack, getTeamColor(0) === 'red' && styles.playerLabelRed]}>
+              <View style={[styles.turnIndicator, isMyTurn && styles.turnIndicatorActive]} />
+              <Text style={styles.playerName}>{playerNames[0]}</Text>
+              <Text style={styles.cardCountLabel}>{hands[0].length} карт</Text>
+              <Pressable
+                style={styles.exitButton}
+                onPress={() => router.back()}
+              >
+                <Text style={styles.exitText}>← Меню</Text>
+              </Pressable>
+            </View>
+
+            <PlayerHand
+              hand={hands[0]}
+              validCards={validCards}
+              onPlayCard={handlePlayCard}
+              isMyTurn={isMyTurn}
+            />
+          </View>
         </View>
       </View>
 
-      {/* Round result modal */}
       {lastRoundResult && (
         <RoundResultModal
           visible={phase === 'ROUND_FINISHED'}
@@ -206,17 +206,31 @@ export default function GameTableScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0A3D1F',
+    backgroundColor: THEME.cream,
+    padding: 8,
+  },
+  tableFrame: {
+    flex: 1,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: THEME.wood,
+    borderWidth: 3,
+    borderColor: THEME.woodDark,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
   gameArea: {
     flex: 1,
-    paddingHorizontal: 6,
-    paddingTop: 6,
-    gap: 2,
+    paddingHorizontal: 8,
+    paddingTop: 10,
+    gap: 6,
+    backgroundColor: '#D09B6B',
   },
   topOpponent: {
     alignItems: 'center',
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   middleRow: {
     flex: 1,
@@ -238,7 +252,7 @@ const styles = StyleSheet.create({
   },
   trumpContainer: {
     position: 'absolute',
-    top: -36,
+    top: -34,
     left: -4,
     zIndex: 10,
     alignItems: 'center',
@@ -252,29 +266,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   phaseText: {
-    color: '#F5C842',
+    color: THEME.blue,
     fontSize: 11,
-    fontWeight: '600',
-    fontStyle: 'italic',
+    fontWeight: '700',
   },
   trickScore: {
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(254,249,239,0.88)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.amber,
     paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   trickScoreText: {
-    color: '#A8C5A0',
+    color: THEME.blue,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   playerHandArea: {
-    paddingBottom: 6,
+    paddingBottom: 8,
   },
   playerLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+    paddingVertical: 5,
     marginBottom: 4,
     gap: 6,
     borderRadius: 10,
@@ -293,40 +309,50 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2E7D4F',
+    backgroundColor: THEME.mint,
   },
   turnIndicatorActive: {
-    backgroundColor: '#F5C842',
+    backgroundColor: THEME.coral,
   },
   playerName: {
-    color: '#FFFFFF',
+    color: '#4A2F1B',
     fontSize: 13,
     fontWeight: '700',
   },
   cardCountLabel: {
-    color: '#A8C5A0',
+    color: '#7A4F2D',
     fontSize: 11,
+    fontWeight: '600',
   },
   exitButton: {
     marginLeft: 'auto',
     paddingHorizontal: 8,
     paddingVertical: 3,
+    backgroundColor: THEME.blue,
+    borderRadius: 8,
   },
   exitText: {
-    color: '#A8C5A0',
+    color: THEME.cream,
     fontSize: 11,
+    fontWeight: '700',
   },
   leadSuitContainer: {
-    position: "absolute",
-    top: -36,
-    right: -4,
+    position: 'absolute',
+    top: -34,
+    right: -2,
     zIndex: 10,
-    alignItems: "center",
+    alignItems: 'center',
+    backgroundColor: 'rgba(254,249,239,0.92)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: THEME.amber,
   },
   leadSuitText: {
-    color: "#F5C842",
+    color: THEME.blue,
     fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

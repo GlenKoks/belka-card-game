@@ -13,7 +13,6 @@ interface OpponentHandProps {
 
 export function OpponentHand({ cardCount, name, isCurrentPlayer, position, team }: OpponentHandProps) {
   const isVertical = position === 'left' || position === 'right';
-
   const cards = Array.from({ length: cardCount }, (_, i) => i);
 
   return (
@@ -25,7 +24,6 @@ export function OpponentHand({ cardCount, name, isCurrentPlayer, position, team 
         <Text style={styles.cardCount}>{cardCount}</Text>
       </View>
 
-      {/* Face-down cards */}
       <View style={[styles.cardsRow, isVertical && styles.cardsColumn]}>
         {cards.map((i) => (
           <View
@@ -78,16 +76,28 @@ const styles = StyleSheet.create({
   nameBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 10,
+    backgroundColor: 'rgba(254,249,239,0.88)',
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 3,
     gap: 4,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#FFCB77',
   },
   activeBadge: {
-    borderColor: '#F5C842',
+    borderColor: '#17C3B2',
+    shadowColor: '#17C3B2',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  blackTeamBadge: {
+    backgroundColor: 'rgba(34,124,157,0.22)',
+    borderColor: '#227C9D',
+  },
+  redTeamBadge: {
+    backgroundColor: 'rgba(254,109,115,0.22)',
+    borderColor: '#FE6D73',
   },
 
   blackTeamBadge: {
@@ -102,17 +112,17 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#F5C842',
+    backgroundColor: '#17C3B2',
   },
   nameText: {
-    color: '#FFFFFF',
+    color: '#4A2F1B',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     maxWidth: 80,
   },
   cardCount: {
-    color: '#A8C5A0',
+    color: '#227C9D',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

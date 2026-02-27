@@ -16,8 +16,8 @@ interface CardComponentProps {
 const SUIT_COLORS: Record<Suit, string> = {
   spades: '#1A1A1A',
   clubs: '#1A1A1A',
-  hearts: '#E53935',
-  diamonds: '#E53935',
+  hearts: '#FE6D73',
+  diamonds: '#FE6D73',
 };
 
 export function CardComponent({
@@ -59,7 +59,6 @@ export function CardComponent({
         style,
       ]}
     >
-      {/* Top-left rank + suit */}
       <View style={styles.cornerTop}>
         <Text style={[styles.rankText, { color: suitColor }, dims.rankStyle]}>
           {rankLabel}
@@ -69,13 +68,11 @@ export function CardComponent({
         </Text>
       </View>
 
-      {/* Center suit symbol */}
       <Text style={[styles.suitCenter, { color: suitColor }, dims.suitCenterStyle]}>
         {symbol}
       </Text>
 
-      {/* Bottom-right rank + suit (rotated) */}
-      <View style={[styles.cornerBottom]}>
+      <View style={styles.cornerBottom}>
         <Text style={[styles.rankText, { color: suitColor }, dims.rankStyle]}>
           {rankLabel}
         </Text>
@@ -145,25 +142,25 @@ const styles = StyleSheet.create({
   },
   faceUp: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#EFD6BA',
   },
   faceDown: {
-    backgroundColor: '#1A5C32',
+    backgroundColor: '#227C9D',
     borderWidth: 2,
-    borderColor: '#F5C842',
+    borderColor: '#17C3B2',
     borderRadius: 7,
   },
   highlighted: {
     borderWidth: 2,
-    borderColor: '#F5C842',
-    shadowColor: '#F5C842',
+    borderColor: '#FFCB77',
+    shadowColor: '#FFCB77',
     shadowOpacity: 0.8,
     shadowRadius: 6,
     elevation: 8,
   },
   selected: {
     borderWidth: 2,
-    borderColor: '#F5C842',
+    borderColor: '#17C3B2',
   },
   cornerTop: {
     alignSelf: 'flex-start',

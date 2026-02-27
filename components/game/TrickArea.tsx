@@ -10,24 +10,22 @@ interface TrickAreaProps {
   phase: string;
 }
 
-// Position of each player's card in the trick area
-// 0=bottom, 1=left, 2=top, 3=right
 const POSITIONS = {
-  0: { bottom: 4, left: '50%', marginLeft: -29 },    // bottom center
-  1: { top: '50%', marginTop: -43, left: 4 },         // left center
-  2: { top: 4, left: '50%', marginLeft: -29 },        // top center
-  3: { top: '50%', marginTop: -43, right: 4 },        // right center
+  0: { bottom: 4, left: '50%', marginLeft: -29 },
+  1: { top: '50%', marginTop: -43, left: 4 },
+  2: { top: 4, left: '50%', marginLeft: -29 },
+  3: { top: '50%', marginTop: -43, right: 4 },
 };
 
-export function TrickArea({ trick, playerNames, phase }: TrickAreaProps) {
+export function TrickArea({ trick, playerNames }: TrickAreaProps) {
   const isResolved = trick.winnerId !== null;
 
   return (
     <View style={styles.container}>
-      {/* Felt circle */}
-      <View style={styles.feltCircle} />
+      <View style={styles.tableCircleOuter}>
+        <View style={styles.tableCircleInner} />
+      </View>
 
-      {/* Played cards */}
       {trick.cards.map(({ card, playerId }) => {
         const isWinner = isResolved && trick.winnerId === playerId;
         return (
@@ -47,12 +45,10 @@ export function TrickArea({ trick, playerNames, phase }: TrickAreaProps) {
         );
       })}
 
-      {/* Empty slots hint */}
       {trick.cards.length === 0 && (
         <Text style={styles.emptyHint}>Ваш ход</Text>
       )}
 
-      {/* Winner announcement */}
       {isResolved && trick.winnerId !== null && (
         <View style={styles.winnerBadge}>
           <Text style={styles.winnerText}>
@@ -66,47 +62,61 @@ export function TrickArea({ trick, playerNames, phase }: TrickAreaProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 220,
-    height: 220,
+    width: 228,
+    height: 228,
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  feltCircle: {
+  tableCircleOuter: {
     position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    width: 188,
+    height: 188,
+    borderRadius: 94,
+    backgroundColor: '#C98A57',
+    borderWidth: 2,
+    borderColor: '#8D5A34',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tableCircleInner: {
+    width: 168,
+    height: 168,
+    borderRadius: 84,
+    backgroundColor: '#DDAA78',
     borderWidth: 1,
-    borderColor: '#2E7D4F',
+    borderColor: '#B57A4B',
   },
   cardSlot: {
     position: 'absolute',
     alignItems: 'center',
   },
   playerLabel: {
-    color: '#A8C5A0',
+    color: '#5B3A24',
     fontSize: 9,
     marginTop: 2,
     textAlign: 'center',
     maxWidth: 58,
+    fontWeight: '700',
   },
   emptyHint: {
-    color: '#A8C5A0',
+    color: '#227C9D',
     fontSize: 13,
     fontStyle: 'italic',
+    fontWeight: '700',
   },
   winnerBadge: {
     position: 'absolute',
-    backgroundColor: 'rgba(245, 200, 66, 0.9)',
+    backgroundColor: 'rgba(255,203,119,0.96)',
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FE6D73',
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   winnerText: {
-    color: '#0A3D1F',
-    fontWeight: '700',
+    color: '#8D3E45',
+    fontWeight: '800',
     fontSize: 12,
   },
 });

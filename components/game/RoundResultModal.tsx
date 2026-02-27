@@ -1,9 +1,10 @@
-import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
+import React from 'react';
+import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { RoundResult } from '@/lib/game/types';
 
 interface RoundResultModalProps {
   visible: boolean;
-  result: RoundResult | null;
+  result: RoundResult;
   matchScore: { black: number; red: number };
   winThreshold: number;
   onNextRound: () => void;
@@ -16,28 +17,25 @@ export function RoundResultModal({
   winThreshold,
   onNextRound,
 }: RoundResultModalProps) {
-  if (!result) return null;
-
-  const blackWon = result.eyesEarned.black > 0;
-  const redWon = result.eyesEarned.red > 0;
+  const blackWon = result.eyesEarned.black > result.eyesEarned.red;
+  const redWon = result.eyesEarned.red > result.eyesEarned.black;
   const isEggs = result.wasEggs;
 
-  let resultTitle = 'Яйца!';
-  let resultColor = '#FFB800';
+  let resultTitle = 'Ничья';
+  let resultColor = '#227C9D';
   let eyesText = '';
 
   if (isEggs) {
-    resultTitle = '🥚 Яйца! Баллы не начислены';
-    resultColor = '#FFB800';
-    eyesText = 'В следующем раунде победитель получит 4 Глаза';
+    resultTitle = '🥚 Яйца!';
+    resultColor = '#17C3B2';
   } else if (blackWon) {
     resultTitle = '✅ Чёрные победили!';
-    resultColor = '#1a1a1a';
-    eyesText = `+${result.eyesEarned.black} Глаз`;
+    resultColor = '#227C9D';
+    eyesText = `+${result.eyesEarned.black} глаз`;
   } else if (redWon) {
     resultTitle = '✅ Красные победили!';
-    resultColor = '#E53935';
-    eyesText = `+${result.eyesEarned.red} Глаз`;
+    resultColor = '#FE6D73';
+    eyesText = `+${result.eyesEarned.red} глаз`;
   }
 
   return (
@@ -50,7 +48,6 @@ export function RoundResultModal({
             {resultTitle}
           </Text>
 
-          {/* Card Points */}
           <View style={styles.pointsRow}>
             <View style={styles.pointBlock}>
               <Text style={styles.pointLabel}>Баллы</Text>
@@ -65,7 +62,6 @@ export function RoundResultModal({
             </View>
           </View>
 
-          {/* Trick counts */}
           <View style={styles.tricksRow}>
             <View style={styles.trickBlock}>
               <Text style={styles.trickLabel}>Взятки</Text>
@@ -78,14 +74,12 @@ export function RoundResultModal({
             </View>
           </View>
 
-          {/* Eyes earned */}
           {eyesText ? (
             <Text style={[styles.eyesText, { color: resultColor }]}>{eyesText}</Text>
           ) : null}
 
-          {/* Match score */}
           <View style={styles.matchScore}>
-            <Text style={styles.matchScoreLabel}>Счёт матча (Глаза)</Text>
+            <Text style={styles.matchScoreLabel}>Счёт матча</Text>
             <View style={styles.matchScoreRow}>
               <View style={styles.teamScore}>
                 <Text style={styles.teamScoreLabel}>Чёрные</Text>
@@ -97,11 +91,11 @@ export function RoundResultModal({
                 <Text style={styles.matchScoreValue}>{matchScore.red}</Text>
               </View>
             </View>
-            <Text style={styles.matchScoreSub}>до {winThreshold} Глаз</Text>
+            <Text style={styles.matchScoreSub}>до {winThreshold} глаз</Text>
           </View>
 
           <Pressable
-            style={({ pressed }) => [styles.button, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
             onPress={onNextRound}
           >
             <Text style={styles.buttonText}>Следующий раунд →</Text>
@@ -115,29 +109,29 @@ export function RoundResultModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(34, 24, 16, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#1a2a1a',
-    borderRadius: 16,
+    backgroundColor: '#FEF9EF',
+    borderRadius: 18,
     padding: 24,
     width: '85%',
     maxWidth: 400,
     borderWidth: 2,
-    borderColor: '#2E7D4F',
+    borderColor: '#FFCB77',
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
+    color: '#227C9D',
     textAlign: 'center',
     marginBottom: 12,
   },
   resultTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '900',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -149,7 +143,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#2E7D4F',
+    borderColor: '#FFCB77',
   },
   pointBlock: {
     alignItems: 'center',
@@ -157,24 +151,25 @@ const styles = StyleSheet.create({
   },
   pointLabel: {
     fontSize: 11,
-    color: '#A8C5A0',
-    fontWeight: '600',
+    color: '#8B6748',
+    fontWeight: '700',
     marginBottom: 4,
   },
   pointValue: {
     fontSize: 24,
-    fontWeight: '800',
-    color: '#F5C842',
+    fontWeight: '900',
+    color: '#227C9D',
   },
   pointSub: {
     fontSize: 10,
-    color: '#A8C5A0',
+    color: '#8B6748',
     marginTop: 2,
   },
   pointSep: {
     fontSize: 14,
-    color: '#A8C5A0',
+    color: '#17C3B2',
     marginHorizontal: 8,
+    fontWeight: '700',
   },
   tricksRow: {
     flexDirection: 'row',
@@ -184,7 +179,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#2E7D4F',
+    borderColor: '#FFCB77',
   },
   trickBlock: {
     alignItems: 'center',
@@ -192,36 +187,39 @@ const styles = StyleSheet.create({
   },
   trickLabel: {
     fontSize: 11,
-    color: '#A8C5A0',
-    fontWeight: '600',
+    color: '#8B6748',
+    fontWeight: '700',
     marginBottom: 4,
   },
   trickCount: {
     fontSize: 20,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '900',
+    color: '#227C9D',
   },
   trickSep: {
     fontSize: 14,
-    color: '#A8C5A0',
+    color: '#17C3B2',
     marginHorizontal: 8,
+    fontWeight: '700',
   },
   eyesText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     textAlign: 'center',
     marginBottom: 16,
   },
   matchScore: {
-    backgroundColor: 'rgba(46, 125, 79, 0.2)',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FFCB77',
     padding: 12,
     marginBottom: 16,
   },
   matchScoreLabel: {
     fontSize: 11,
-    color: '#A8C5A0',
-    fontWeight: '600',
+    color: '#8B6748',
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -237,35 +235,36 @@ const styles = StyleSheet.create({
   },
   teamScoreLabel: {
     fontSize: 10,
-    color: '#A8C5A0',
+    color: '#8B6748',
     marginBottom: 4,
   },
   matchScoreValue: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#F5C842',
+    fontWeight: '900',
+    color: '#227C9D',
   },
   matchScoreSep: {
     fontSize: 16,
-    color: '#A8C5A0',
+    color: '#17C3B2',
     marginHorizontal: 8,
+    fontWeight: '700',
   },
   matchScoreSub: {
     fontSize: 10,
-    color: '#A8C5A0',
+    color: '#8B6748',
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#2E7D4F',
-    borderRadius: 8,
+    backgroundColor: '#17C3B2',
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 8,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#FEF9EF',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     textAlign: 'center',
   },
 });
