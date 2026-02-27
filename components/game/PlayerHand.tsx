@@ -21,7 +21,6 @@ export function PlayerHand({ hand, validCards, onPlayCard, isMyTurn }: PlayerHan
     if (!validIds.has(card.id)) return;
 
     if (selectedId === card.id) {
-      // Second tap = play
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
@@ -81,11 +80,17 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   turnHint: {
-    color: '#F5C842',
+    color: '#227C9D',
+    backgroundColor: 'rgba(254,249,239,0.88)',
+    borderWidth: 1,
+    borderColor: '#FFCB77',
+    borderRadius: 10,
     fontSize: 11,
     textAlign: 'center',
     marginBottom: 6,
-    fontWeight: '600',
+    fontWeight: '700',
+    paddingVertical: 4,
+    marginHorizontal: 24,
   },
   scrollContent: {
     paddingHorizontal: 12,

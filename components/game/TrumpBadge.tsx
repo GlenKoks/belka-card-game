@@ -8,10 +8,10 @@ interface TrumpBadgeProps {
 }
 
 const SUIT_COLORS: Record<Suit, string> = {
-  spades: '#1A1A1A',
-  clubs: '#1A1A1A',
-  hearts: '#E53935',
-  diamonds: '#E53935',
+  spades: '#227C9D',
+  clubs: '#227C9D',
+  hearts: '#FE6D73',
+  diamonds: '#FE6D73',
 };
 
 export function TrumpBadge({ suit }: TrumpBadgeProps) {
@@ -24,7 +24,7 @@ export function TrumpBadge({ suit }: TrumpBadgeProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>КОЗЫРЬ</Text>
-      <View style={[styles.circle, { borderColor: '#F5C842' }]}>
+      <View style={styles.circle}>
         <Text style={[styles.symbol, { color }]}>{symbol}</Text>
       </View>
       <Text style={styles.suitName}>{name}</Text>
@@ -35,37 +35,38 @@ export function TrumpBadge({ suit }: TrumpBadgeProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(254,249,239,0.96)',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#F5C842',
+    borderColor: '#FFCB77',
   },
   label: {
-    color: '#F5C842',
+    color: '#227C9D',
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 1,
     marginBottom: 2,
   },
   circle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
+    borderColor: '#17C3B2',
   },
   symbol: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
   },
   suitName: {
-    color: '#FFFFFF',
+    color: '#227C9D',
     fontSize: 9,
     marginTop: 2,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
