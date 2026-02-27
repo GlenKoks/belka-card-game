@@ -11,7 +11,8 @@ import { PlayerHand } from '@/components/game/PlayerHand';
 import { OpponentHand } from '@/components/game/OpponentHand';
 import { RoundResultModal } from '@/components/game/RoundResultModal';
 import { MatchResultScreen } from '@/components/game/MatchResultScreen';
-import { Card, Team } from '@/lib/game/types';
+import { VoltCard } from '@/components/game/VoltCard';
+import { Card } from '@/lib/game/types';
 
 export default function GameTableScreen() {
   const { state, playCard, nextRound, startGame, getValidCardsForPlayer } = useGame();
@@ -20,6 +21,7 @@ export default function GameTableScreen() {
     phase,
     hands,
     trumpSuit,
+    voltCard,
     currentTrick,
     completedTricks,
     matchScore,
@@ -32,12 +34,6 @@ export default function GameTableScreen() {
 
   const isMyTurn = phase === 'PLAYING_TRICK' && currentPlayerId === 0;
   const validCards = getValidCardsForPlayer(0);
-  const revealTeams = round >= 2 || phase === 'MATCH_FINISHED';
-
-  const getTeamColor = (playerId: 0 | 1 | 2 | 3): Team | undefined => {
-    if (!revealTeams) return undefined;
-    return state.teamAssignment[playerId];
-  };
 
   const handlePlayCard = (card: Card) => {
     playCard(card);
@@ -88,7 +84,6 @@ export default function GameTableScreen() {
             name={playerNames[2]}
             isCurrentPlayer={currentPlayerId === 2}
             position="top"
-            team={getTeamColor(2)}
           />
         </View>
 
@@ -99,13 +94,17 @@ export default function GameTableScreen() {
               name={playerNames[1]}
               isCurrentPlayer={currentPlayerId === 1}
               position="left"
-              team={getTeamColor(1)}
             />
           </View>
 
           <View style={styles.centerArea}>
             <View style={styles.trumpContainer}>
               <TrumpBadge suit={trumpSuit} />
+              {voltCard && (
+                <View style={styles.voltContainer}>
+                  <VoltCard card={voltCard} />
+                </View>
+              )}
             </View>
 
             <View style={styles.centerArea}>
@@ -140,14 +139,13 @@ export default function GameTableScreen() {
               name={playerNames[3]}
               isCurrentPlayer={currentPlayerId === 3}
               position="right"
-              team={getTeamColor(3)}
             />
           </View>
         </View>
 
         <View style={styles.playerHandArea}>
           {/* Player label */}
-          <View style={[styles.playerLabel, getTeamColor(0) === 'black' && styles.playerLabelBlack, getTeamColor(0) === 'red' && styles.playerLabelRed]}>
+          <View style={styles.playerLabel}>
             <View style={[styles.turnIndicator, isMyTurn && styles.turnIndicatorActive]} />
             <Text style={styles.playerName}>{playerNames[0]}</Text>
             <Text style={styles.cardCountLabel}>{hands[0].length} карт</Text>
@@ -250,6 +248,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  voltContainer: {
+    marginTop: 2,
+  },
   phaseTextContainer: {
     position: 'absolute',
     top: -10,
@@ -285,17 +286,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginBottom: 4,
     gap: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  playerLabelBlack: {
-    backgroundColor: 'rgba(40,40,40,0.65)',
-    borderColor: '#6F6F6F',
-  },
-  playerLabelRed: {
-    backgroundColor: 'rgba(183,28,28,0.45)',
-    borderColor: '#E57373',
   },
   turnIndicator: {
     width: 8,
