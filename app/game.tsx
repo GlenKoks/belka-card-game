@@ -74,7 +74,6 @@ export default function GameTableScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={THEME.cream} />
 
-      {/* Score bar */}
       <ScoreBar
         blackScore={matchScore.black}
         redScore={matchScore.red}
@@ -82,10 +81,7 @@ export default function GameTableScreen() {
         round={round}
       />
 
-      {/* Main game area */}
       <View style={styles.gameArea}>
-
-        {/* Top opponent (Player 2 = Partner) */}
         <View style={styles.topOpponent}>
           <OpponentHand
             cardCount={hands[2].length}
@@ -107,9 +103,7 @@ export default function GameTableScreen() {
             />
           </View>
 
-          {/* Center: trick area + trump */}
           <View style={styles.centerArea}>
-            {/* Trump badge — top left of center */}
             <View style={styles.trumpContainer}>
               <TrumpBadge suit={trumpSuit} />
             </View>
@@ -140,7 +134,6 @@ export default function GameTableScreen() {
                 />
               )}
 
-          {/* Right opponent (Player 3) */}
           <View style={styles.sideOpponent}>
             <OpponentHand
               cardCount={hands[3].length}
@@ -152,7 +145,6 @@ export default function GameTableScreen() {
           </View>
         </View>
 
-        {/* Player hand (bottom) */}
         <View style={styles.playerHandArea}>
           {/* Player label */}
           <View style={[styles.playerLabel, getTeamColor(0) === 'black' && styles.playerLabelBlack, getTeamColor(0) === 'red' && styles.playerLabelRed]}>
