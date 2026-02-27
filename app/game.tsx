@@ -11,8 +11,15 @@ import { PlayerHand } from '@/components/game/PlayerHand';
 import { OpponentHand } from '@/components/game/OpponentHand';
 import { RoundResultModal } from '@/components/game/RoundResultModal';
 import { MatchResultScreen } from '@/components/game/MatchResultScreen';
-import { VoltCard } from '@/components/game/VoltCard';
-import { Card } from '@/lib/game/types';
+import { Card, Team } from '@/lib/game/types';
+
+const THEME = {
+  blue: '#227C9D',
+  mint: '#17C3B2',
+  amber: '#FFCB77',
+  cream: '#FEF9EF',
+  coral: '#FE6D73',
+};
 
 export default function GameTableScreen() {
   const { state, playCard, nextRound, startGame, getValidCardsForPlayer } = useGame();
@@ -21,7 +28,6 @@ export default function GameTableScreen() {
     phase,
     hands,
     trumpSuit,
-    voltCard,
     currentTrick,
     completedTricks,
     matchScore,
@@ -34,12 +40,17 @@ export default function GameTableScreen() {
 
   const isMyTurn = phase === 'PLAYING_TRICK' && currentPlayerId === 0;
   const validCards = getValidCardsForPlayer(0);
+  const revealTeams = round >= 2 || phase === 'MATCH_FINISHED';
+
+  const getTeamColor = (playerId: 0 | 1 | 2 | 3): Team | undefined => {
+    if (!revealTeams) return undefined;
+    return state.teamAssignment[playerId];
+  };
 
   const handlePlayCard = (card: Card) => {
     playCard(card);
   };
 
-  // Match finished screen
   if (phase === 'MATCH_FINISHED') {
     return (
       <MatchResultScreen
@@ -51,17 +62,15 @@ export default function GameTableScreen() {
     );
   }
 
-  // Trick counts for display
   const myTricks = completedTricks.filter(t => t.winnerId === 0 || t.winnerId === 2).length;
   const theirTricks = completedTricks.filter(t => t.winnerId === 1 || t.winnerId === 3).length;
 
-  // Phase display text
   const getPhaseText = () => {
     switch (phase) {
       case 'TRUMP_REVEALED': return 'Козырь определён...';
       case 'TRICK_RESOLVED': return 'Взятка разыграна...';
       case 'PLAYING_TRICK':
-        if (currentPlayerId === 0) return null; // shown in PlayerHand
+        if (currentPlayerId === 0) return null;
         return `Ход: ${playerNames[currentPlayerId]}`;
       default: return null;
     }
@@ -71,9 +80,8 @@ export default function GameTableScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A3D1F" />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.cream} />
 
-      {/* Score bar */}
       <ScoreBar
         blackScore={matchScore.black}
         redScore={matchScore.red}
@@ -81,58 +89,45 @@ export default function GameTableScreen() {
         round={round}
       />
 
-      {/* Main game area */}
       <View style={styles.gameArea}>
-
-        {/* Top opponent (Player 2 = Partner) */}
         <View style={styles.topOpponent}>
           <OpponentHand
             cardCount={hands[2].length}
             name={playerNames[2]}
             isCurrentPlayer={currentPlayerId === 2}
             position="top"
+            team={getTeamColor(2)}
           />
         </View>
 
-        {/* Middle row: left opponent, trick area, right opponent */}
         <View style={styles.middleRow}>
-          {/* Left opponent (Player 1) */}
           <View style={styles.sideOpponent}>
             <OpponentHand
               cardCount={hands[1].length}
               name={playerNames[1]}
               isCurrentPlayer={currentPlayerId === 1}
               position="left"
+              team={getTeamColor(1)}
             />
           </View>
 
-          {/* Center: trick area + trump */}
           <View style={styles.centerArea}>
-            {/* Trump badge — top left of center */}
             <View style={styles.trumpContainer}>
               <TrumpBadge suit={trumpSuit} />
-              {voltCard && (
-                <View style={styles.voltContainer}>
-                  <VoltCard card={voltCard} />
-                </View>
-              )}
             </View>
 
-            {/* Lead suit indicator — top right */}
             {currentTrick.leadSuit && phase !== 'ROUND_FINISHED' && (
               <View style={styles.leadSuitContainer}>
                 <Text style={styles.leadSuitText}>Ход: {currentTrick.leadSuit === 'clubs' ? '♣' : currentTrick.leadSuit === 'spades' ? '♠' : currentTrick.leadSuit === 'hearts' ? '♥' : '♦'}</Text>
               </View>
             )}
 
-            {/* Phase status text */}
             {phaseText && (
               <View style={styles.phaseTextContainer}>
                 <Text style={styles.phaseText}>{phaseText}</Text>
               </View>
             )}
 
-            {/* Trick area */}
             {phase !== 'ROUND_FINISHED' && (
               <TrickArea
                 trick={currentTrick}
@@ -142,7 +137,6 @@ export default function GameTableScreen() {
               />
             )}
 
-            {/* Trick score */}
             {phase !== 'ROUND_FINISHED' && (
               <View style={styles.trickScore}>
                 <Text style={styles.trickScoreText}>
@@ -152,21 +146,24 @@ export default function GameTableScreen() {
             )}
           </View>
 
-          {/* Right opponent (Player 3) */}
           <View style={styles.sideOpponent}>
             <OpponentHand
               cardCount={hands[3].length}
               name={playerNames[3]}
               isCurrentPlayer={currentPlayerId === 3}
               position="right"
+              team={getTeamColor(3)}
             />
           </View>
         </View>
 
-        {/* Player hand (bottom) */}
         <View style={styles.playerHandArea}>
-          {/* Player label */}
-          <View style={styles.playerLabel}>
+          <View style={[
+            styles.playerLabel,
+            getTeamColor(0) === 'black' && styles.playerLabelBlack,
+            getTeamColor(0) === 'red' && styles.playerLabelRed,
+          ]}
+          >
             <View style={[styles.turnIndicator, isMyTurn && styles.turnIndicatorActive]} />
             <Text style={styles.playerName}>{playerNames[0]}</Text>
             <Text style={styles.cardCountLabel}>{hands[0].length} карт</Text>
@@ -187,7 +184,6 @@ export default function GameTableScreen() {
         </View>
       </View>
 
-      {/* Round result modal */}
       {lastRoundResult && (
         <RoundResultModal
           visible={phase === 'ROUND_FINISHED'}
@@ -204,17 +200,20 @@ export default function GameTableScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0A3D1F',
+    backgroundColor: THEME.cream,
+    padding: 8,
   },
   gameArea: {
     flex: 1,
-    paddingHorizontal: 6,
-    paddingTop: 6,
-    gap: 2,
+    paddingHorizontal: 8,
+    paddingTop: 10,
+    gap: 6,
+    backgroundColor: '#D09B6B',
+    borderRadius: 20,
   },
   topOpponent: {
     alignItems: 'center',
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   middleRow: {
     flex: 1,
@@ -236,14 +235,10 @@ const styles = StyleSheet.create({
   },
   trumpContainer: {
     position: 'absolute',
-    top: -36,
+    top: -34,
     left: -4,
     zIndex: 10,
     alignItems: 'center',
-    gap: 4,
-  },
-  voltContainer: {
-    marginTop: 2,
   },
   phaseTextContainer: {
     position: 'absolute',
@@ -253,70 +248,94 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   phaseText: {
-    color: '#F5C842',
+    color: THEME.blue,
     fontSize: 11,
-    fontWeight: '600',
-    fontStyle: 'italic',
+    fontWeight: '700',
   },
   trickScore: {
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(254,249,239,0.88)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.amber,
     paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   trickScoreText: {
-    color: '#A8C5A0',
+    color: THEME.blue,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   playerHandArea: {
-    paddingBottom: 6,
+    paddingBottom: 8,
   },
   playerLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+    paddingVertical: 5,
     marginBottom: 4,
     gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(254,249,239,0.7)',
+  },
+  playerLabelBlack: {
+    backgroundColor: 'rgba(34,124,157,0.2)',
+    borderColor: THEME.blue,
+  },
+  playerLabelRed: {
+    backgroundColor: 'rgba(254,109,115,0.22)',
+    borderColor: THEME.coral,
   },
   turnIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2E7D4F',
+    backgroundColor: THEME.mint,
   },
   turnIndicatorActive: {
-    backgroundColor: '#F5C842',
+    backgroundColor: THEME.coral,
   },
   playerName: {
-    color: '#FFFFFF',
+    color: '#4A2F1B',
     fontSize: 13,
     fontWeight: '700',
   },
   cardCountLabel: {
-    color: '#A8C5A0',
+    color: '#7A4F2D',
     fontSize: 11,
+    fontWeight: '600',
   },
   exitButton: {
     marginLeft: 'auto',
     paddingHorizontal: 8,
     paddingVertical: 3,
+    backgroundColor: THEME.blue,
+    borderRadius: 8,
   },
   exitText: {
-    color: '#A8C5A0',
+    color: THEME.cream,
     fontSize: 11,
+    fontWeight: '700',
   },
   leadSuitContainer: {
-    position: "absolute",
-    top: -36,
-    right: -4,
+    position: 'absolute',
+    top: -34,
+    right: -2,
     zIndex: 10,
-    alignItems: "center",
+    alignItems: 'center',
+    backgroundColor: 'rgba(254,249,239,0.92)',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: THEME.amber,
   },
   leadSuitText: {
-    color: "#F5C842",
+    color: THEME.blue,
     fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

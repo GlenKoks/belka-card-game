@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState, gameReducer } from '../gameReducer';
 import { getValidCards, determineTrickWinner, calculateCardPoints, calculateEyes } from '../rules';
-import { Card, Trick, PlayerId } from '../types';
+import { Card, Trick, PlayerId, GameState } from '../types';
 
 describe('getValidCards', () => {
   const hand: Card[] = [
@@ -239,5 +239,48 @@ describe('gameReducer', () => {
     expect(state.phase).toBe('WAITING');
     expect(state.matchScore.black).toBe(0);
     expect(state.matchScore.red).toBe(0);
+  });
+});
+
+describe('round transitions', () => {
+  it('stores round result on last trick so next round can start from modal action', () => {
+    const finishedTricks: Trick[] = Array.from({ length: 8 }, (_, i) => ({
+      cards: [
+        { card: { id: `6_spades_${i}`, suit: 'spades', rank: '6' }, playerId: 0 as PlayerId },
+      ],
+      leadSuit: 'spades',
+      winnerId: 0 as PlayerId,
+    }));
+
+    const stateBeforeLastTrick: GameState = {
+      ...createInitialState(100),
+      phase: 'TRICK_RESOLVED' as const,
+      round: 1,
+      teamAssignment: { 0: 'black', 1: 'red', 2: 'black', 3: 'red' } as const,
+      trumpHolderId: 0 as PlayerId,
+      trumpSuit: 'clubs' as const,
+      completedTricks: finishedTricks,
+      currentTrick: {
+        cards: [
+          { card: { id: 'A_spades', suit: 'spades', rank: 'A' }, playerId: 0 as PlayerId },
+          { card: { id: 'K_spades', suit: 'spades', rank: 'K' }, playerId: 1 as PlayerId },
+          { card: { id: 'Q_spades', suit: 'spades', rank: 'Q' }, playerId: 2 as PlayerId },
+          { card: { id: '7_spades', suit: 'spades', rank: '7' }, playerId: 3 as PlayerId },
+        ],
+        leadSuit: 'spades' as const,
+        winnerId: null,
+      },
+    };
+
+    const roundFinished = gameReducer(stateBeforeLastTrick, { type: 'RESOLVE_TRICK' });
+
+    expect(roundFinished.phase).toBe('ROUND_FINISHED');
+    expect(roundFinished.lastRoundResult).not.toBeNull();
+    expect(roundFinished.matchScore.black).toBeGreaterThan(0);
+
+    const nextRound = gameReducer(roundFinished, { type: 'NEXT_ROUND' });
+    expect(nextRound.round).toBe(2);
+    expect(nextRound.phase).toBe('PLAYING_TRICK');
+    expect(nextRound.lastRoundResult).toBeNull();
   });
 });

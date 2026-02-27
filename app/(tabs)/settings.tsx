@@ -9,7 +9,7 @@ import { PlayerId } from '@/lib/game/types';
 const WIN_OPTIONS = [5, 7, 10, 12, 15];
 
 export default function SettingsScreen() {
-  const { state, startGame, dispatch } = useGame();
+  const { state, dispatch } = useGame();
   const [winThreshold, setWinThreshold] = useState(state.winThreshold);
   const [playerNames, setPlayerNames] = useState<Record<PlayerId, string>>({
     ...state.playerNames,

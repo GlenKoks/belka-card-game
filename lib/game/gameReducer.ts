@@ -98,7 +98,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const completedTrick = { ...state.currentTrick, winnerId };
       const completedTricks = [...state.completedTricks, completedTrick];
 
-      const phase = completedTricks.length === 9 ? 'ROUND_FINISHED' : 'PLAYING_TRICK';
+      if (completedTricks.length === 9) {
+        const { matchScore, roundResult, wasEggs } = calculateRoundOutcome(state, completedTricks);
+        const matchFinished =
+          matchScore.black >= state.winThreshold ||
+          matchScore.red >= state.winThreshold;
+
+        return {
+          ...state,
+          completedTricks,
+          currentTrick: { cards: [], leadSuit: null, winnerId: null },
+          currentPlayerId: winnerId ?? 0,
+          phase: matchFinished ? 'MATCH_FINISHED' : 'ROUND_FINISHED',
+          matchScore,
+          lastRoundResult: roundResult,
+          previousRoundWasEggs: wasEggs,
+        };
+      }
+
       const currentPlayerId = winnerId ?? 0;
 
       return {
@@ -106,70 +123,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         completedTricks,
         currentTrick: { cards: [], leadSuit: null, winnerId: null },
         currentPlayerId,
-        phase,
+        phase: 'PLAYING_TRICK',
       };
     }
 
     case 'NEXT_ROUND': {
       if (state.phase !== 'ROUND_FINISHED') return state;
-
-      // Calculate round result
-      const blackPlayers: PlayerId[] = [0, 1, 2, 3].filter(
-        p => state.teamAssignment[p as PlayerId] === 'black'
-      ) as PlayerId[];
-      const redPlayers: PlayerId[] = [0, 1, 2, 3].filter(
-        p => state.teamAssignment[p as PlayerId] === 'red'
-      ) as PlayerId[];
-
-      const blackPoints = calculateCardPoints(state.completedTricks, blackPlayers);
-      const redPoints = calculateCardPoints(state.completedTricks, redPlayers);
-      const blackTricks = state.completedTricks.filter(
-        t => t.winnerId !== null && blackPlayers.includes(t.winnerId)
-      ).length;
-      const redTricks = state.completedTricks.filter(
-        t => t.winnerId !== null && redPlayers.includes(t.winnerId)
-      ).length;
-
-      const { black: eyesBlack, red: eyesRed, wasEggs } = calculateEyes(
-        blackPoints,
-        redPoints,
-        blackTricks,
-        redTricks,
-        state.trumpHolderId,
-        state.teamAssignment,
-        state.previousRoundWasEggs
-      );
-
-      const newMatchScore = {
-        black: state.matchScore.black + eyesBlack,
-        red: state.matchScore.red + eyesRed,
-      };
-
-      const roundResult = {
-        trickCounts: {
-          0: state.completedTricks.filter(t => t.winnerId === 0).length,
-          1: state.completedTricks.filter(t => t.winnerId === 1).length,
-          2: state.completedTricks.filter(t => t.winnerId === 2).length,
-          3: state.completedTricks.filter(t => t.winnerId === 3).length,
-        },
-        teamTricks: { black: blackTricks, red: redTricks },
-        cardPoints: { black: blackPoints, red: redPoints },
-        eyesEarned: { black: eyesBlack, red: eyesRed },
-        wasEggs,
-      };
-
-      // Check if match is finished
-      if (
-        newMatchScore.black >= state.winThreshold ||
-        newMatchScore.red >= state.winThreshold
-      ) {
-        return {
-          ...state,
-          phase: 'MATCH_FINISHED',
-          matchScore: newMatchScore,
-          lastRoundResult: roundResult,
-        };
-      }
 
       // Continue to next round - prepare state and deal cards immediately
       const nextRound = state.round + 1;
@@ -186,9 +145,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         currentTrick: { cards: [], leadSuit: null, winnerId: null },
         completedTricks: [],
         phase: 'DEALING' as const,
-        matchScore: newMatchScore,
-        lastRoundResult: roundResult,
-        previousRoundWasEggs: wasEggs,
+        lastRoundResult: null,
       };
 
       // Deal cards for next round and auto-start playing
@@ -300,5 +257,53 @@ function dealRound(state: GameState): GameState {
     suitAssignment,
     currentPlayerId: firstPlayerId,
     phase: 'TRUMP_REVEALED',
+  };
+}
+
+function calculateRoundOutcome(state: GameState, completedTricks: GameState['completedTricks']) {
+  const blackPlayers: PlayerId[] = [0, 1, 2, 3].filter(
+    p => state.teamAssignment[p as PlayerId] === 'black'
+  ) as PlayerId[];
+  const redPlayers: PlayerId[] = [0, 1, 2, 3].filter(
+    p => state.teamAssignment[p as PlayerId] === 'red'
+  ) as PlayerId[];
+
+  const blackPoints = calculateCardPoints(completedTricks, blackPlayers);
+  const redPoints = calculateCardPoints(completedTricks, redPlayers);
+  const blackTricks = completedTricks.filter(
+    t => t.winnerId !== null && blackPlayers.includes(t.winnerId)
+  ).length;
+  const redTricks = completedTricks.filter(
+    t => t.winnerId !== null && redPlayers.includes(t.winnerId)
+  ).length;
+
+  const { black: eyesBlack, red: eyesRed, wasEggs } = calculateEyes(
+    blackPoints,
+    redPoints,
+    blackTricks,
+    redTricks,
+    state.trumpHolderId,
+    state.teamAssignment,
+    state.previousRoundWasEggs
+  );
+
+  return {
+    matchScore: {
+      black: state.matchScore.black + eyesBlack,
+      red: state.matchScore.red + eyesRed,
+    },
+    roundResult: {
+      trickCounts: {
+        0: completedTricks.filter(t => t.winnerId === 0).length,
+        1: completedTricks.filter(t => t.winnerId === 1).length,
+        2: completedTricks.filter(t => t.winnerId === 2).length,
+        3: completedTricks.filter(t => t.winnerId === 3).length,
+      },
+      teamTricks: { black: blackTricks, red: redTricks },
+      cardPoints: { black: blackPoints, red: redPoints },
+      eyesEarned: { black: eyesBlack, red: eyesRed },
+      wasEggs,
+    },
+    wasEggs,
   };
 }
